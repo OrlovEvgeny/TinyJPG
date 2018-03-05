@@ -1,4 +1,4 @@
-TinyJPG
+# TinyJPG Filesystem watcher and image compress
 
 JPEG image compress watcher based Filesystem event notification fsnotify
 
