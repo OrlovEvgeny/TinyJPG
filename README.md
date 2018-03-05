@@ -26,8 +26,11 @@ JPEG image compress watcher based Filesystem event notification fsnotify
 *Start*
 I recommend using supervisor http://blog.questionable.services/article/running-go-applications-in-the-background/
 
+or Tmux
 
-./build/tinyjpg-watcher -path=/Users/oj/Desktop/PP -verbose=true -worker=10
+```
+~ $ ./build/tinyjpg-watcher -path=/Users/oj/Desktop/PP -verbose=true -worker=10
+```
 
 Params:
 * path - required
