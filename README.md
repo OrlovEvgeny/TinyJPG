@@ -33,6 +33,6 @@ or Tmux
 ```
 
 Params:
-* path - required
-* verbose - optional
-* worker - optional
+* path - required. Path to watch new files, default /home/www
+* verbose - optional. Verbose log out, default true
+* worker - optional. Amount start workers process, default 5
