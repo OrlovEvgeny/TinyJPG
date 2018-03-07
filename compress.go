@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os/exec"
 	"os"
+	"os/exec"
 )
 
 type Worker struct {
