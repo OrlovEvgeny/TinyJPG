@@ -9,6 +9,8 @@ JPEG image compress watcher based Filesystem event notification [github.com/rjec
 
 ## Installation
 
+**For compilation you need to install [Golang1.8](https://medium.com/@patdhlk/how-to-install-go-1-8-on-ubuntu-16-04-710967aa53c9)**
+
 ```bash
 ~ $ apt install libmagickwand-dev imagemagick
 ```
@@ -61,6 +63,6 @@ or use **Tmux**
 ```
 
 **Args:**
-* path - required. Path to watch new files, default /home/www
-* verbose - optional. Verbose log out, default true
-* worker - optional. Amount start workers process, default 5
+* *path* - required. Path to watch new files, default /home/www
+* *verbose* - optional. Verbose log out, default true
+* *worker* - optional. Amount start workers process, default 5
