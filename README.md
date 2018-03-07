@@ -35,7 +35,7 @@ JPEG image compress watcher based Filesystem event notification [github.com/rjec
 *write*
 ```bash
 [program:tinyjpg]
-command=/home/TinyJPG/build/tinyjpg-watcher
+command=/home/TinyJPG/build/tinyjpg-watcher -path=/home/www/example.com/images -verbose=true -worker=10
 directory=/home/TinyJPG/build
 environment=ENVIRONMENT=production
 autorestart=true
@@ -56,7 +56,7 @@ stdout_logfile=/var/log/tinyjpg/log.out.log
 or use **Tmux**
 
 ```bash
-~ $ ./build/tinyjpg-watcher -path=/Users/oj/Desktop/PP -verbose=true -worker=10
+~ $ ./build/tinyjpg-watcher -path=/home/www/example.com/images -verbose=true -worker=10
 ```
 
 **Args:**
