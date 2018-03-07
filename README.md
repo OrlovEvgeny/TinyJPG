@@ -7,7 +7,7 @@ JPEG image compress watcher based Filesystem event notification [github.com/rjec
 ![screenshot](doc/screen.png "compress example")
 
 
-## Installation
+## Build
 
 **For compilation you need to install [Golang1.8](https://medium.com/@patdhlk/how-to-install-go-1-8-on-ubuntu-16-04-710967aa53c9)**
 
