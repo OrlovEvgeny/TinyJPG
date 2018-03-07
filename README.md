@@ -1,4 +1,6 @@
 # TinyJPG Filesystem watcher and image compress
+[![Go Report Card](https://goreportcard.com/badge/github.com/OrlovEvgeny/TinyJPG)](https://goreportcard.com/report/github.com/OrlovEvgeny/TinyJPG)
+
 
 JPEG image compress watcher based Filesystem event notification [github.com/rjeczalik/notify](https://github.com/rjeczalik/notify)
 
