@@ -6,7 +6,7 @@ JPEG image compress watcher based Filesystem event notification [github.com/rjec
 ![screenshot](doc/screen.png "compress example")
 
 
-##Installation
+## Installation
 
 ```bash
 ~ $ apt install libmagickwand-dev imagemagick
