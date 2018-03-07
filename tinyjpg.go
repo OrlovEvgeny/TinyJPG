@@ -13,6 +13,7 @@ var rootPath = flag.String("path", "/home/www", "uploads folder path, default - 
 var verbose = flag.Bool("verbose", true, "verbose log")
 var maxWorker = flag.Int("worker", 5, "maximum amount workers")
 
+//
 func main() {
 	flag.Parse()
 

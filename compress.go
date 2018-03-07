@@ -6,10 +6,12 @@ import (
 	"os/exec"
 )
 
+//worker unique identificator
 type Worker struct {
 	id int
 }
 
+//
 func (w *Worker) process(c chan string) {
 	for {
 		imagePath := <-c
