@@ -38,5 +38,5 @@ deploy:
     - build/amd64/${MYAPP}-amd64
   skip_cleanup: true
   on:
-    repo: OrlovEvgeny/$MYAPP
     tags: true
+    all_branches: true
