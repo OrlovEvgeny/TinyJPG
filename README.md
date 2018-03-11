@@ -7,7 +7,7 @@ JPEG image compress watcher based Filesystem event notification [github.com/rjec
 ![screenshot](doc/screen.png "compress example")
 
 
-## Install binary
+# Install binary
 
 **Installation dependency**
 ```bash
@@ -83,7 +83,7 @@ or use **Tmux**
 
 
 
-## Build Source
+# Build Source
 
 **For compilation you need to install [Golang1.8](https://medium.com/@patdhlk/how-to-install-go-1-8-on-ubuntu-16-04-710967aa53c9)**
 
@@ -110,3 +110,7 @@ or use **Tmux**
 ````bash
 ~ $ chmod +x /usr/local/bin/tinyjpg
 ````
+
+# License:
+
+[MIT](LICENSE.txt)
