@@ -1,8 +1,7 @@
 language: go
 
 go:
-  - 1.9
-  - master
+  - tip # The latest version of Go.
 
 install: true
 
@@ -37,8 +36,9 @@ deploy:
     secure: ${GH_TOKEN}
   file_glob: true
   file:
-    - $MYAPP-386
-    - $MYAPP-amd64
+    - build/386/$MYAPP-386
+    - build/amd64/$MYAPP-amd64
   skip_cleanup: true
   on:
-    tags: true
+    repo: OrlovEvgeny/$trueMYAPP
+    tags:
