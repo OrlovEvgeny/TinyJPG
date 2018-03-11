@@ -113,4 +113,4 @@ or use **Tmux**
 
 # License:
 
-[MIT](LICENSE.txt)
+[MIT](LICENSE)
