@@ -1,0 +1,44 @@
+sudo: required
+
+services:
+  - docker
+
+language: go
+go:
+  - tip
+
+env:
+  global:
+    - MYAPP=tinyjpg
+    - MYEMAIL=dev@meetapp.io
+    - secure: ${GH_TOKEN} 4f7de5b22d4fb22dc91deff1f1350360d25cf968
+
+before_install:
+  - sudo apt-get -qq update
+  - mkdir -p ${GOPATH}/bin
+
+install:
+  - cd $GOPATH/src/github.com/OrlovEvgeny/$MYAPP
+  - go install
+
+script: echo "pass"
+
+# build the app, build the package
+before_deploy:
+  - mkdir -p build/{386,amd64}
+  - GOOS=linux GOARCH=386 go build --ldflags "-X main.VERSION=${TRAVIS_TAG}" -o build/386/$MYAPP *.go
+  - GOOS=linux GOARCH=amd64 go build --ldflags "-X main.VERSION=${TRAVIS_TAG}" -o build/amd64/$MYAPP *.go
+
+
+deploy:
+  provider: releases
+  email: dev@meetapp.io
+  api_key:
+    secure: ${GH_TOKEN} 4f7de5b22d4fb22dc91deff1f1350360d25cf968
+  file_glob: true
+  file:
+    - $MYAPP-386
+    - $MYAPP-amd64
+  skip_cleanup: true
+  on:
+    tags: true
