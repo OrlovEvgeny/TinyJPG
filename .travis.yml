@@ -26,7 +26,7 @@ script: echo "pass"
 before_deploy:
   - mkdir -p build/{386,amd64}
   - GOOS=linux GOARCH=386 go build --ldflags "-X main.VERSION=${TRAVIS_TAG}" -o build/386/${MYAPP}-386 *.go
-  - GOOS=linux GOARCH=amd64 go build --ldflags "-X main.VERSION=${TRAVIS_TAG}" -o build/amd64/${MYAPP}-amd64*.go
+  - GOOS=linux GOARCH=amd64 go build --ldflags "-X main.VERSION=${TRAVIS_TAG}" -o build/amd64/${MYAPP}-amd64 *.go
   - ls build/amd64
 
 deploy:
@@ -35,8 +35,8 @@ deploy:
   api_key:
     secure: ${GH_TOKEN}
   file:
-    - build/386/$MYAPP
-    - build/amd64/$MYAPP
+    - build/386/${MYAPP}-386
+    - build/amd64/${MYAPP}-amd64
   skip_cleanup: true
   on:
     all_branches: true
