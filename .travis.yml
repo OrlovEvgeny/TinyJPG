@@ -29,7 +29,6 @@ before_deploy:
   - GOOS=linux GOARCH=amd64 go build --ldflags "-X main.VERSION=${TRAVIS_TAG}" -o build/amd64/$MYAPP *.go
   - ls build/amd64
 
-
 deploy:
   provider: releases
   email: dev@meetapp.io
