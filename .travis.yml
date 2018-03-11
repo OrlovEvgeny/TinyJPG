@@ -23,7 +23,7 @@ install:
 
 script: echo "pass"
 
-# build the app, build the package
+# build the app,build the package
 before_deploy:
   - mkdir -p build/{386,amd64}
   - GOOS=linux GOARCH=386 go build --ldflags "-X main.VERSION=${TRAVIS_TAG}" -o build/386/$MYAPP *.go
