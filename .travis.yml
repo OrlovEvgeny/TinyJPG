@@ -35,8 +35,8 @@ deploy:
   api_key:
     secure: ${GH_TOKEN}
   file:
-    - build/386/$MYAPP-386
-    - build/amd64/$MYAPP-amd64
+    - build/386/$MYAPP
+    - build/amd64/$MYAPP
   skip_cleanup: true
   on:
     repo: OrlovEvgeny/$trueMYAPP
