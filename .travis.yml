@@ -27,6 +27,7 @@ before_deploy:
   - mkdir -p build/{386,amd64}
   - GOOS=linux GOARCH=386 go build --ldflags "-X main.VERSION=${TRAVIS_TAG}" -o build/386/$MYAPP *.go
   - GOOS=linux GOARCH=amd64 go build --ldflags "-X main.VERSION=${TRAVIS_TAG}" -o build/amd64/$MYAPP *.go
+  - ls build/amd64
 
 
 deploy:
@@ -39,5 +40,4 @@ deploy:
     - build/amd64/$MYAPP
   skip_cleanup: true
   on:
-    repo: OrlovEvgeny/$trueMYAPP
-    tags: true
+    all_branches: true
