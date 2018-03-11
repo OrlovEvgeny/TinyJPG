@@ -11,7 +11,7 @@ env:
   global:
     - MYAPP=tinyjpg
     - MYEMAIL=dev@meetapp.io
-    - secure: ${GH_TOKEN} 4f7de5b22d4fb22dc91deff1f1350360d25cf968
+    - secure: ${GH_TOKEN}
 
 before_install:
   - sudo apt-get -qq update
@@ -34,7 +34,7 @@ deploy:
   provider: releases
   email: dev@meetapp.io
   api_key:
-    secure: ${GH_TOKEN} 4f7de5b22d4fb22dc91deff1f1350360d25cf968
+    secure: ${GH_TOKEN}
   file_glob: true
   file:
     - $MYAPP-386
