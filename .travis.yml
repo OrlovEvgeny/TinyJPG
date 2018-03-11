@@ -1,11 +1,10 @@
-sudo: required
-
-services:
-  - docker
-
 language: go
+
 go:
-  - tip
+  - 1.9
+  - master
+
+install: true
 
 env:
   global:
@@ -18,6 +17,7 @@ before_install:
   - mkdir -p ${GOPATH}/bin
 
 install:
+  - go get github.com/OrlovEvgeny/$MYAPP
   - cd $GOPATH/src/github.com/OrlovEvgeny/$MYAPP
   - go install
 
