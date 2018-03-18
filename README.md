@@ -1,4 +1,6 @@
 # TinyJPG Filesystem watcher and image compress
+
+[![Join the chat at https://gitter.im/TinyJPG/Lobby](https://badges.gitter.im/TinyJPG/Lobby.svg)](https://gitter.im/TinyJPG/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Go Report Card](https://goreportcard.com/badge/github.com/OrlovEvgeny/TinyJPG?)](https://goreportcard.com/report/github.com/OrlovEvgeny/TinyJPG?)
 [![Build Status](https://travis-ci.org/OrlovEvgeny/TinyJPG.svg?branch=master)](https://travis-ci.org/OrlovEvgeny/TinyJPG)
 [![Maintainability](https://api.codeclimate.com/v1/badges/89f33892db95130c5b3a/maintainability)](https://codeclimate.com/github/OrlovEvgeny/TinyJPG/maintainability)
