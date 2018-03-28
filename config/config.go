@@ -13,10 +13,10 @@ var Config = struct {
 		Worker       int    `yaml:"worker"`
 		WorkerBuffer int    `yaml:"worker_buffer"`
 		EventBuffer  int    `yaml:"event_buffer"`
-		Verbose     bool   `yaml:"verbose"`
+		Verbose      bool   `yaml:"verbose"`
 		ErrorLog     string `yaml:"error_log"`
 		InfoLog      string `yaml:"info_log"`
-		PidFile	 	string `yaml:"pid_file"`
+		PidFile      string `yaml:"pid_file"`
 	} `yaml:"general"`
 
 	Compress struct {

@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/rjeczalik/notify"
+	"log"
 	"os"
 	"regexp"
 	"strings"
-	"log"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 	commit  string
 	docs    string
 
-	LogErrChannel = make(chan string, 300)
+	LogErrChannel  = make(chan string, 300)
 	LogInfoChannel = make(chan string, 300)
 
 	configPath = flag.String("config", "", "config file path")
@@ -36,7 +36,7 @@ func InitProcess() {
 
 	workerLog := &LoggerWorker{
 		ErrorLog: Config.General.ErrorLog,
-		InfoLog: Config.General.InfoLog,
+		InfoLog:  Config.General.InfoLog,
 	}
 
 	go workerLog.processErr()
@@ -76,12 +76,11 @@ func InitProcess() {
 //
 func getRegxp() string {
 	if len(Config.Compress.Prefix) > 0 && Config.Compress.Prefix[0] != "*" {
-		prefix := fmt.Sprintf(`(%s).*.(JPG|jpeg|JPEG|jpg|png|PNG)$`, strings.Join(Config.Compress.Prefix,"|"))
+		prefix := fmt.Sprintf(`(%s).*.(JPG|jpeg|JPEG|jpg|png|PNG)$`, strings.Join(Config.Compress.Prefix, "|"))
 		return prefix
 	}
 	return `^.*.(JPG|jpeg|JPEG|jpg|png|PNG)$`
 }
-
 
 //
 func main() {
@@ -114,7 +113,6 @@ func main() {
 	} else {
 		Config.Compress.Paths = append(Config.Compress.Paths, Config.Compress.Path)
 	}
-
 
 	InitProcess()
 

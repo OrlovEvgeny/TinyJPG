@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 )
+
 //
 type LogVerbose struct {
 	ID         int
@@ -17,7 +18,7 @@ type LogVerbose struct {
 //
 type LoggerWorker struct {
 	ErrorLog string
-	InfoLog string
+	InfoLog  string
 }
 
 // process info-log writer
@@ -61,4 +62,3 @@ func (v *LogVerbose) push() {
 	textLog := fmt.Sprintf("worker id: %d was compressed >> %s Before Size: %d, After size: %d \n", v.ID, v.ImagePath, v.beforeSize, v.afterSize)
 	LogInfoChannel <- textLog
 }
-
