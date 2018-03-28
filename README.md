@@ -96,16 +96,13 @@ or use **Tmux**
 ```
 
 
-or use CLI mode
-`````bash
-~ $ tinyjpg -path=/home/www/example.com/images -verbose=true -worker=10
+or use **CLI** mode
+````bash
+~ $ tinyjpg -path=/home/www/example.com/images -worker=10
 ````
-
 **Args:**
 * *path* - required. Path to watch new files, default /home/www
-* *verbose* - optional. Verbose log out, default true
 * *worker* - optional. Amount start workers process, default 5
-
 
 
 
