@@ -1,40 +1,62 @@
 package main
 
 import (
+	. "./config"
 	"flag"
 	"fmt"
 	"github.com/rjeczalik/notify"
-	"log"
 	"os"
 	"regexp"
+	"strings"
+	"log"
 )
 
-var rootPath = flag.String("path", "/home/www", "uploads folder path, default - /home/www")
-var verbose = flag.Bool("verbose", true, "verbose log")
-var maxWorker = flag.Int("worker", 5, "maximum amount workers")
+var (
+	version string
+	build   string
+	commit  string
+	docs    string
+
+	LogErrChannel = make(chan string, 300)
+	LogInfoChannel = make(chan string, 300)
+
+	configPath = flag.String("config", "", "config file path")
+)
 
 //
-func main() {
-	flag.Parse()
+func InitProcess() {
 
-	re, err := regexp.Compile(`^.*.(JPG|jpeg|JPEG|jpg)$`)
+	c := make(chan string, Config.General.WorkerBuffer)
+	ec := make(chan notify.EventInfo, Config.General.EventBuffer)
+
+	workerWatch := &Watch{
+		EC:    ec,
+		Paths: Config.Compress.Paths,
+	}
+
+	workerLog := &LoggerWorker{
+		ErrorLog: Config.General.ErrorLog,
+		InfoLog: Config.General.InfoLog,
+	}
+
+	go workerLog.processErr()
+	go workerLog.processInfo()
+
+	re, err := regexp.Compile(getRegxp())
 	if err != nil {
-		fmt.Printf("There is a problem with your regexp.\n")
+		msg := fmt.Sprintf("Error: There is a problem with your regexp: %s\n", getRegxp())
+		LogErrChannel <- msg
+		log.Println(msg)
+
 		os.Exit(1)
 	}
 
-	c := make(chan string, 500)
-	ec := make(chan notify.EventInfo, 1)
-	done := make(chan bool)
-
-	for i := 1; i <= *maxWorker; i++ {
+	for i := 1; i <= Config.General.Worker; i++ {
 		worker := &Worker{id: i}
 		go worker.process(c)
 	}
 
-	if err := notify.Watch(*rootPath+"/...", ec, notify.Create); err != nil {
-		log.Fatal(err)
-	}
+	workerWatch.watcherStart()
 	defer notify.Stop(ec)
 
 	// Process events
@@ -49,5 +71,57 @@ func main() {
 		}
 	}()
 
+}
+
+//
+func getRegxp() string {
+	if len(Config.Compress.Prefix) > 0 && Config.Compress.Prefix[0] != "*" {
+		prefix := fmt.Sprintf(`(%s).*.(JPG|jpeg|JPEG|jpg|png|PNG)$`, strings.Join(Config.Compress.Prefix,"|"))
+		return prefix
+	}
+	return `^.*.(JPG|jpeg|JPEG|jpg|png|PNG)$`
+}
+
+
+//
+func main() {
+
+	if len(os.Args) == 2 && (os.Args[1] == "--version" || os.Args[1] == "-v" || os.Args[1] == "ver") {
+		PrintVersion()
+		os.Exit(0)
+	}
+
+	flag.StringVar(&Config.Compress.Path, "path", "/home/www", "uploads folder path, default - /home/www")
+	flag.IntVar(&Config.General.Worker, "worker", 5, "maximum amount workers")
+	flag.IntVar(&Config.General.WorkerBuffer, "worker_buffer", 500, "maximum buffer queue workers")
+	flag.IntVar(&Config.Compress.Quality, "quality", 82, "image quality level in percentage")
+	flag.IntVar(&Config.General.EventBuffer, "event_buffer", 300, "buffer an event reported")
+
+	flag.Parse()
+
+	//print helps if not require args
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: TinyJPG -options=param\n\n")
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+
+	PrintVersion()
+
+	//Config file load
+	if *configPath != "" {
+		LoadConfig(true, *configPath)
+	} else {
+		Config.Compress.Paths = append(Config.Compress.Paths, Config.Compress.Path)
+	}
+
+
+	InitProcess()
+
+	done := make(chan bool, 1)
 	<-done
+
+	LogInfoChannel <- fmt.Sprintf("tinyjpg-watcher stoped")
+	fmt.Println("tinyjpg-watcher stoped")
+	os.Exit(0)
 }
