@@ -35,13 +35,19 @@ for **amd64**
 ````bash
 ~ $ tinyjpg -help
 
-   Usage of tinyjpg:
-  -path string
-    	uploads folder path, default - /home/www (default "/home/www")
-  -verbose
-    	verbose log (default true)
-  -worker int
-    	maximum amount workers (default 5)
+    Usage of build/tinyjpg:
+      -config string
+            config file path
+      -event_buffer int
+            buffer an event reported (default 300)
+      -path string
+            uploads folder path, default - /home/www (default "/home/www")
+      -quality int
+            image quality level in percentage (default 82)
+      -worker int
+            maximum amount workers (default 5)
+      -worker_buffer int
+            maximum buffer queue workers (default 500)
 
 ````
 
