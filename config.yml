@@ -19,14 +19,21 @@ general:
 #
 # paths - directories you need to track
 # prefix - prefix of files to be processed, Default value all files - *
+# example use
+#
+#   prefix:
+#      - 'orig'
+#      - 'medium'
+#      - 'full'
+#
 # quality - This param image quality level in percentage.
 # If the original image quality is lower than the quality of the parameter - quality
 # the image will not be processed
 ###
 compress:
   paths:
-    - '/Users/oj/Pictures'
-    - '/Users/oj/Desktop'
+    - '/home/www/example.com/uploads'
+    - '/home/www/site.org/uploads'
   prefix:
-    - '\/ad\ad\'
+    - '*'
   quality: 82
