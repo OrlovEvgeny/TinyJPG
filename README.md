@@ -19,17 +19,28 @@ JPEG image compress watcher based Filesystem event notification [github.com/rjec
 
 for **amd64**
 ````bash
-~ $ curl -L https://github.com/OrlovEvgeny/TinyJPG/releases/download/v0.0.7-beta/tinyjpg-amd64 --output /usr/local/bin/tinyjpg
+~ $ curl -L https://github.com/OrlovEvgeny/TinyJPG/releases/download/v0.0.8/tinyjpg-amd64 --output /usr/local/bin/tinyjpg
 ````
  or **i386**
 ````bash
-~ $ curl -L https://github.com/OrlovEvgeny/TinyJPG/releases/download/v0.0.7-beta/tinyjpg-386 --output /usr/local/bin/tinyjpg
+~ $ curl -L https://github.com/OrlovEvgeny/TinyJPG/releases/download/v0.0.8/tinyjpg-386 --output /usr/local/bin/tinyjpg
 ````
 
 **permission for execution**
 ````bash
 ~ $ chmod +x /usr/local/bin/tinyjpg
 ````
+
+**get config file**
+````bash
+~ $ mkdir -p /etc/tinyjpg && curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/config.yml --output /etc/tinyjpg/config.yml
+````
+
+**Edit config File**
+````bash
+~ $ vim /etc/tinyjpg/config.yml
+````
+
 
 **check that everything is fine**
 ````bash
@@ -61,7 +72,7 @@ for **amd64**
 *write*
 ```bash
 [program:tinyjpg]
-command=/usr/local/bin/tinyjpg -path=/home/www/example.com/images -verbose=true -worker=10
+command=/usr/local/bin/tinyjpg -config=/etc/tinyjpg/config.yml
 environment=ENVIRONMENT=production
 autorestart=true
 user=root
@@ -81,8 +92,14 @@ stdout_logfile=/var/log/tinyjpg/log.out.log
 or use **Tmux**
 
 ```bash
-~ $ tinyjpg -path=/home/www/example.com/images -verbose=true -worker=10
+~ $ tinyjpg -config=/etc/tinyjpg/config.yml
 ```
+
+
+or use CLI mode
+`````bash
+~ $ tinyjpg -path=/home/www/example.com/images -verbose=true -worker=10
+````
 
 **Args:**
 * *path* - required. Path to watch new files, default /home/www
