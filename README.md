@@ -5,11 +5,14 @@
 [![Build Status](https://travis-ci.org/OrlovEvgeny/TinyJPG.svg?branch=master)](https://travis-ci.org/OrlovEvgeny/TinyJPG)
 [![Maintainability](https://api.codeclimate.com/v1/badges/89f33892db95130c5b3a/maintainability)](https://codeclimate.com/github/OrlovEvgeny/TinyJPG/maintainability)
 
+
+![screenshot](doc/logo.png "compress example")
+
 JPEG image compress watcher based Filesystem event notification [github.com/rjeczalik/notify](https://github.com/rjeczalik/notify)
 
+
+**Result compressed** 
 ![screenshot](doc/screen.png "compress example")
-
-
 # Install binary
 
 **Installation dependency**
