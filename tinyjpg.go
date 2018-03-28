@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "./config"
+	. "github.com/OrlovEvgeny/TinyJPG/config"
 	"flag"
 	"fmt"
 	"github.com/rjeczalik/notify"
