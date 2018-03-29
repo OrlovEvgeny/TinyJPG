@@ -20,12 +20,17 @@ JPEG image compress watcher based Filesystem event notification [github.com/rjec
 ~ $ apt install libmagickwand-dev imagemagick
 ```
 
-**Install TinyJPG for v0.0.8**
+**Install TinyJPG for v0.0.8:**
 ````bash
-sudo echo Starting&&(export TINYURL="https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh"&&\
-curl $TINYURL||echo "echo ERROR: \
-"curl not found\
-"&&exit 1")|sudo sh -s - v0.0.8
+curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh | sh -s - v0.0.8
+````
+
+If you prefer **Ansible**:
+````bash
+tasks:
+- name: TinyJPG installed
+  sudo: yes
+  shell: "curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh | sh -s - v0.0.8"
 ````
 
 **Edit config File**
