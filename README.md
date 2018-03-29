@@ -23,10 +23,8 @@ JPEG image compress watcher based Filesystem event notification [github.com/rjec
 **Install TinyJPG for v0.0.8**
 ````bash
 sudo echo Starting&&(export TINYURL="https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh"&&\
-wget -O - $TINYURL||\
-fetch -o - $TINYURL||\
 curl $TINYURL||echo "echo ERROR: \
-"wget curl or fetch not found\
+"curl not found\
 "&&exit 1")|sudo sh -s - v0.0.8
 ````
 
