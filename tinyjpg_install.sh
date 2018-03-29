@@ -1,7 +1,7 @@
 VERSION="$1"
 
 PATH="$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
-TARGET_DIR=/usr/local/tinyjpg
+TARGET_DIR=/usr/local/bin/tinyjpg
 CONF_DIR=/etc/tinyjpg
 PERM="chmod +x /usr/local/bin/tinyjpg"
 
