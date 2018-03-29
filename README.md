@@ -20,23 +20,14 @@ JPEG image compress watcher based Filesystem event notification [github.com/rjec
 ~ $ apt install libmagickwand-dev imagemagick
 ```
 
-for **amd64**
+**Install TinyJPG for v0.0.8**
 ````bash
-~ $ curl -L https://github.com/OrlovEvgeny/TinyJPG/releases/download/v0.0.8/tinyjpg-amd64 --output /usr/local/bin/tinyjpg
-````
- or **i386**
-````bash
-~ $ curl -L https://github.com/OrlovEvgeny/TinyJPG/releases/download/v0.0.8/tinyjpg-386 --output /usr/local/bin/tinyjpg
-````
-
-**permission for execution**
-````bash
-~ $ chmod +x /usr/local/bin/tinyjpg
-````
-
-**get config file**
-````bash
-~ $ mkdir -p /etc/tinyjpg && curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/config.yml --output /etc/tinyjpg/config.yml
+sudo echo Starting&&(export TINYURL="https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh"&&\
+wget -O - $TINYURL||\
+fetch -o - $TINYURL||\
+curl $TINYURL||echo "echo ERROR: \
+"wget curl or fetch not found\
+"&&exit 1")|sudo sh -s - v0.0.8
 ````
 
 **Edit config File**
