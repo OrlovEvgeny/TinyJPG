@@ -14,7 +14,7 @@ fi
 URL="https://github.com/OrlovEvgeny/TinyJPG/releases/download/$VERSION/tinyjpg-$ARCH"
 CONF_URL="https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/config.yml"
 
-elif [ -n "`which curl`" ]; then
+if [ -n "`which curl`" ]; then
     download_cmd="curl -L $URL --output $TARGET_DIR"
     conf_download_cmd="curl -L $CONF_URL --output $CONF_DIR/config.yml"
 else
