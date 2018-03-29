@@ -3,6 +3,7 @@ VERSION="$1"
 PATH="$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
 TARGET_DIR=/usr/local/bin/tinyjpg
 CONF_DIR=/etc/tinyjpg
+LOG_DIR=/var/log/tinyjpg
 PERM="chmod +x /usr/local/bin/tinyjpg"
 
 if [ `getconf LONG_BIT` = "32" ]; then
@@ -22,6 +23,7 @@ else
 fi
 
 mkdir -p $CONF_DIR
+mkdir -p $LOG_DIR
 
 echo -n "Fetching TinyJPG from $URL: "
 $download_cmd || die "Error when downloading TinyJPG from $URL"
