@@ -38,6 +38,51 @@ tasks:
 ~ $ vim /etc/tinyjpg/config.yml
 ````
 
+````bash
+
+##
+# TinyJPG v0.0.8
+#
+# worker - maximum amount workers, Default value - 5
+# verbose - verbose log, Default value - true
+# worker_buffer - maximum buffer queue workers, Default value - 100
+# event_buffer - maximum buffer an event reported by the underlying filesystem notification subsystem, Default value - 100
+##
+general:
+  worker: 5
+  worker_buffer: 100
+  event_buffer: 300
+  verbose: false
+  error_log: '/var/log/tinyjpg/error.log'
+  info_log: '/var/log/tinyjpg/info.log'
+
+###
+# Image compress settings
+#
+# paths - directories you need to track
+# prefix - prefix of files to be processed, Default value all files - *
+# example use
+#
+#   prefix:
+#      - 'orig'
+#      - 'medium'
+#      - 'full'
+#
+# quality - This param image quality level in percentage.
+# If the original image quality is lower than the quality of the parameter - quality
+# the image will not be processed
+###
+compress:
+  paths:
+    - '/home/www/example.com/uploads'
+    - '/home/www/site.org/uploads'
+  prefix:
+    - '*'
+  quality: 82
+
+````
+
+
 
 **check that everything is fine**
 ````bash
