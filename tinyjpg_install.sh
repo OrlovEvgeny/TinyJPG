@@ -22,8 +22,7 @@ else
     die "Failed to download okagent: curl not found, plz install curl"
 fi
 
-mkdir -p $CONF_DIR
-mkdir -p $LOG_DIR
+mkdir -p $CONF_DIR $LOG_DIR
 
 echo -n "Fetching TinyJPG from $URL: "
 $download_cmd || die "Error when downloading TinyJPG from $URL"
