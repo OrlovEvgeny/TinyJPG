@@ -32,4 +32,5 @@ $conf_download_cmd || die "Error when downloading config file TinyJPG from $CONF
 echo -n "Set permission execute TinyJPG: "
 $PERM || die "Error permission execut TinyJPG from $TARGET_DIR"
 /bin/echo -e "\x1B[32m done \x1B[0m"
+tinyjpg -v
 /bin/echo -e "\x1B[32m Finished \x1B[0m"
