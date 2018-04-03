@@ -27,9 +27,9 @@ mkdir -p $CONF_DIR $LOG_DIR
 echo -n "Fetching TinyJPG from $URL: "
 $download_cmd || die "Error when downloading TinyJPG from $URL"
 $conf_download_cmd || die "Error when downloading config file TinyJPG from $CONF_URL"
-echo "Install TinyJPG: \x1B[32m done \x1B[0m"
+/bin/echo -e "Install TinyJPG: \x1B[32m done \x1B[0m"
 
 echo -n "Set permission execute TinyJPG: "
 $PERM || die "Error permission execut TinyJPG from $TARGET_DIR"
-echo "\x1B[32m done \x1B[0m"
-echo "\x1B[32m Finished \x1B[0m"
+/bin/echo -e "\x1B[32m done \x1B[0m"
+/bin/echo -e "\x1B[32m Finished \x1B[0m"
