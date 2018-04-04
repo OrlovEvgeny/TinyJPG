@@ -19,7 +19,7 @@ if [ -n "`which curl`" ]; then
     download_cmd="curl -L $URL --output $TARGET_DIR"
     conf_download_cmd="curl -L $CONF_URL --output $CONF_DIR/config.yml"
 else
-    die "Failed to download okagent: curl not found, plz install curl"
+    die "Failed to download TinyJPG: curl not found, plz install curl"
 fi
 
 mkdir -p $CONF_DIR $LOG_DIR
