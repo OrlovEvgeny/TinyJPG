@@ -23,7 +23,7 @@ type LoggerWorker struct {
 
 // process info-log writer
 func (lw *LoggerWorker) processInfo() {
-	logfile, err := os.OpenFile(lw.InfoLog, os.O_WRONLY|os.O_CREATE, 0666)
+	logfile, err := os.OpenFile(lw.InfoLog, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func (lw *LoggerWorker) processInfo() {
 
 // process error-log writer
 func (lw *LoggerWorker) processErr() {
-	logfile, err := os.OpenFile(lw.ErrorLog, os.O_WRONLY|os.O_CREATE, 0666)
+	logfile, err := os.OpenFile(lw.ErrorLog, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
