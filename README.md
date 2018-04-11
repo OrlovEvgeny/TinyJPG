@@ -1,4 +1,4 @@
-<p align="center"><img src="doc/logo.png" width="360"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/doc/logo.png" width="360"></p>
 <p align="center">
   <a href="https://travis-ci.org/OrlovEvgeny/TinyJPG"><img src="https://travis-ci.org/OrlovEvgeny/TinyJPG.svg?branch=master" alt="Build Status"></img></a>
   <a href="https://codeclimate.com/github/OrlovEvgeny/TinyJPG/maintainability"><img src="https://api.codeclimate.com/v1/badges/89f33892db95130c5b3a/maintainability" alt="Maintainability"></a>
