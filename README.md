@@ -10,13 +10,11 @@
 
 JPEG image compress watcher based Filesystem event notification [github.com/rjeczalik/notify](https://github.com/rjeczalik/notify)
 
-**Example quality 82%**
+**Example compress quality 82%**
 
 original before size 1.47 MB (1,536,181 bytes)  | compressed after 277.56 KB (284,223 bytes)
 ------------- | -------------
 ![screenshot](https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/doc/meg-before.jpg "compress example")  | ![screenshot](https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/doc/meg-after.jpg "compress example")
-
-**Result compressed** 
 
 # Install binary
 
