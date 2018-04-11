@@ -8,9 +8,6 @@
 
 # TinyJPG Filesystem watcher and image compress
 
-
-![screenshot](doc/logo.png "compress example")
-
 JPEG image compress watcher based Filesystem event notification [github.com/rjeczalik/notify](https://github.com/rjeczalik/notify)
 
 
