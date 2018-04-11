@@ -1,9 +1,12 @@
-# TinyJPG Filesystem watcher and image compress
+<p align="center"><img src="doc/logo.png" width="360"></p>
+<p align="center">
+  <a href="https://travis-ci.org/OrlovEvgeny/TinyJPG"><img src="https://travis-ci.org/OrlovEvgeny/TinyJPG.svg?branch=master" alt="Build Status"></img></a>
+  <a href="https://codeclimate.com/github/OrlovEvgeny/TinyJPG/maintainability"><img src="https://api.codeclimate.com/v1/badges/89f33892db95130c5b3a/maintainability" alt="Maintainability"></a>
+  <a href="https://goreportcard.com/report/github.com/OrlovEvgeny/TinyJPG?"><img src="https://goreportcard.com/badge/github.com/OrlovEvgeny/TinyJPG?" /></a>
+  <a href="https://gitter.im/TinyJPG/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/TinyJPG/Lobby.svg" /></a>
+</p>
 
-[![Join the chat at https://gitter.im/TinyJPG/Lobby](https://badges.gitter.im/TinyJPG/Lobby.svg)](https://gitter.im/TinyJPG/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Go Report Card](https://goreportcard.com/badge/github.com/OrlovEvgeny/TinyJPG?)](https://goreportcard.com/report/github.com/OrlovEvgeny/TinyJPG?)
-[![Build Status](https://travis-ci.org/OrlovEvgeny/TinyJPG.svg?branch=master)](https://travis-ci.org/OrlovEvgeny/TinyJPG)
-[![Maintainability](https://api.codeclimate.com/v1/badges/89f33892db95130c5b3a/maintainability)](https://codeclimate.com/github/OrlovEvgeny/TinyJPG/maintainability)
+# TinyJPG Filesystem watcher and image compress
 
 
 ![screenshot](doc/logo.png "compress example")
