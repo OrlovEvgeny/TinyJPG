@@ -13,7 +13,8 @@ env:
 
 before_install:
   - sudo apt-get -qq update
-  - mkdir -p ${GOPATH}/bin
+  - env GO111MODULE=on go build
+  - env GO111MODULE=on go test
 
 install:
   - go get -u github.com/OrlovEvgeny/$MYAPP
