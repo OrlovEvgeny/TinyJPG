@@ -87,6 +87,8 @@ func main() {
 				if re.MatchString(ev.Path()) == true {
 					c <- ev.Path()
 				}
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()
