@@ -143,7 +143,7 @@ or use **Tmux**
 # deprecated
 or use **CLI** mode
 ````bash
-    # deprecated
+# deprecated
 ~ $ tinyjpg -path=/home/www/example.com/images -worker=10
 ````
 **Args:**
