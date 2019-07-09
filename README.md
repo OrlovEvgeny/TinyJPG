@@ -140,15 +140,15 @@ or use **Tmux**
 ~ $ tinyjpg -config=/etc/tinyjpg/config.yml
 ```
 
-
+# deprecated
 or use **CLI** mode
 ````bash
+    # deprecated
 ~ $ tinyjpg -path=/home/www/example.com/images -worker=10
 ````
 **Args:**
 * *path* - required. Path to watch new files, default /home/www
 * *worker* - optional. Amount start workers process, default 5
-
 
 
 # Build Source
