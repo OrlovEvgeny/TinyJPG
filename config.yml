@@ -18,6 +18,15 @@ general:
 #
 # paths - directories you need to track
 # prefix - prefix of files to be processed, Default value all files - *
+#
+# file will be observed:
+# orig-beatiful-kitten-2019.jpg
+# medium-beatiful-dog-600x800.jpg
+#
+# file will not be observed:
+# myphoto-beatiful-kitten-2019.jpg
+# simplephoto-beatiful-dog-600x80.jpg
+#
 # example use
 #
 #   prefix:
