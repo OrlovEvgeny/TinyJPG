@@ -34,7 +34,7 @@ func NewImagemagic(ctx context.Context) *Imagemagic {
 }
 
 func (im *Imagemagic) Run(c chan string) {
-	for i := 0; i > settings.General.Worker; i++ {
+	for i := 0; i < settings.General.Worker; i++ {
 		go im.process(c)
 	}
 }
