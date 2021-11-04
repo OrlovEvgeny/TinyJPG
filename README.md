@@ -23,9 +23,9 @@ original before size 1.47 MB (1,536,181 bytes)  | compressed after 277.56 KB (28
 ~ $ apt install libmagickwand-dev imagemagick
 ```
 
-**Install TinyJPG for v0.0.8:**
+**Install TinyJPG for v0.0.9:**
 ````bash
-curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh | sh -s - v0.0.8
+curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh | sh -s - v0.0.9
 ````
 
 If you prefer **Ansible**:
@@ -33,7 +33,7 @@ If you prefer **Ansible**:
 tasks:
 - name: TinyJPG installed
   sudo: yes
-  shell: "curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh | sh -s - v0.0.8"
+  shell: "curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh | sh -s - v0.0.9"
 ````
 
 **Edit config File**
@@ -44,7 +44,7 @@ tasks:
 ````bash
 
 ##
-# TinyJPG v0.0.8
+# TinyJPG v0.0.9
 #
 # worker - maximum amount workers, Default value - 5
 # verbose - verbose log, Default value - true

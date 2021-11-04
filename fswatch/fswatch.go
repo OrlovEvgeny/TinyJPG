@@ -3,6 +3,7 @@ package fswatch
 import (
 	"github.com/rjeczalik/notify"
 	"log"
+	"path/filepath"
 )
 
 //Watch
@@ -32,7 +33,8 @@ func (w *FSWatcher) FSWatcherRestart() {
 
 //watcherInit
 func watcherInit(ec chan notify.EventInfo, path string) {
-	if err := notify.Watch(path+"/...", ec, notify.Create); err != nil {
-		log.Fatal(err)
+	path = filepath.Join(path, "/...")
+	if err := notify.Watch(path, ec, notify.Create); err != nil {
+		log.Fatalf("watch path %s error: %s\n", path, err)
 	}
 }

@@ -42,7 +42,7 @@ func init() {
 	flag.Parse()
 
 	if err := settings.LoadSettings(settings.SettingFile); err != nil {
-		log.Fatal(err)
+		log.Fatalf("fatal open setting file %s, error: %s\n", settings.SettingFile, err)
 	}
 
 	//Initial global logger

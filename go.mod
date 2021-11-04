@@ -1,5 +1,7 @@
 module github.com/OrlovEvgeny/TinyJPG
 
+go 1.16
+
 require (
 	github.com/OrlovEvgeny/logger v0.0.0-20181108090900-fd2dc780dbd5
 	github.com/rjeczalik/notify v0.9.2
