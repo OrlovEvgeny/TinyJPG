@@ -14,8 +14,8 @@ before_install:
   - sudo apt-get -qq update
 
 install:
-  - go get -u github.com/OrlovEvgeny/$MYAPP
-  - cd $GOPATH/src/github.com/OrlovEvgeny/$MYAPP
+  - go get -u github.com/OrlovEvgeny/TinyJPG
+  - cd $GOPATH/src/github.com/OrlovEvgeny/TinyJPG
   - go install
 
 script: echo "pass"
