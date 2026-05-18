@@ -127,6 +127,30 @@ TEST_CASE("jpeg codec decodes encoded output") {
   CHECK(decoded->pixels.size() == image.pixels.size());
 }
 
+TEST_CASE("lossless jpeg optimization preserves decoded pixels") {
+  const auto image = test_image();
+  const auto encoded =
+      tinyjpg::encode_image(image, tinyjpg::Codec::jpeg, tinyjpg::Quality::from_percent(90).value(),
+                            tinyjpg::FidelityMode::lossy, tinyjpg::EffortLevel::balanced);
+  REQUIRE(encoded.has_value());
+
+  const auto input_path = temp_path("tinyjpg-lossless-optimize-input.jpg");
+  const auto output_path = temp_path("tinyjpg-lossless-optimize-output.jpg");
+  write_bytes(input_path, encoded->bytes);
+
+  const auto optimized = tinyjpg::optimize_jpeg_lossless(input_path);
+  REQUIRE(optimized.has_value());
+  write_bytes(output_path, optimized->bytes);
+
+  const auto decoded_input = tinyjpg::decode_image(input_path);
+  const auto decoded_output = tinyjpg::decode_image(output_path);
+  REQUIRE(decoded_input.has_value());
+  REQUIRE(decoded_output.has_value());
+  CHECK(decoded_output->width == decoded_input->width);
+  CHECK(decoded_output->height == decoded_input->height);
+  CHECK(decoded_output->pixels == decoded_input->pixels);
+}
+
 #if defined(TINYJPG_HAS_WEBP)
 TEST_CASE("webp codec decodes encoded output") {
   const auto image = test_image();

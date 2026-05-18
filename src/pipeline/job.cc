@@ -76,15 +76,23 @@ Result<ProcessResult> process_file(const std::filesystem::path& input_path,
       continue;
     }
 
-    auto resized = resize_image(*image, variant.variant.max_width, variant.variant.max_height,
-                                variant.variant.fit);
-    if (!resized) {
-      return unexpected(resized.error());
-    }
-
     const auto mode = variant.variant.mode.value_or(config.compress.mode);
-    auto encoded =
-        encode_image(*resized, variant.codec, variant.quality, mode, config.compress.effort);
+    const auto can_repack_jpeg_losslessly = *source_codec == Codec::jpeg &&
+                                            variant.codec == Codec::jpeg &&
+                                            mode == FidelityMode::lossless && !variant.resized;
+    auto encode_variant = [&]() -> Result<EncodedImage> {
+      if (can_repack_jpeg_losslessly) {
+        return optimize_jpeg_lossless(input_path);
+      }
+
+      auto resized = resize_image(*image, variant.variant.max_width, variant.variant.max_height,
+                                  variant.variant.fit);
+      if (!resized) {
+        return unexpected(resized.error());
+      }
+      return encode_image(*resized, variant.codec, variant.quality, mode, config.compress.effort);
+    };
+    auto encoded = encode_variant();
     if (!encoded) {
       return unexpected(encoded.error());
     }
