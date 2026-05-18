@@ -63,7 +63,7 @@ target_link_libraries(
   PUBLIC CLI11::CLI11
   PRIVATE JPEG::JPEG PNG::PNG spdlog::spdlog tomlplusplus::tomlplusplus)
 
-if(WebP_FOUND)
+if(TARGET WebP::webp)
   target_link_libraries(tinyjpg_core PRIVATE WebP::webp)
   target_compile_definitions(tinyjpg_core PUBLIC TINYJPG_HAS_WEBP=1)
 elseif(WEBP_FOUND)

@@ -16,6 +16,10 @@
     "libjxl",
     "libpng",
     "libwebp",
+    {
+      "name": "pkgconf",
+      "host": true
+    },
     "spdlog",
     "tomlplusplus"
   ]
