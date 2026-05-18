@@ -6,5 +6,4 @@ DerivePointerAlignment: false
 PointerAlignment: Left
 SortIncludes: CaseSensitive
 IncludeBlocks: Regroup
-Standard: c++23
 ...
