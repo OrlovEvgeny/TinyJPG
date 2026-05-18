@@ -18,14 +18,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v5
-
-      - name: Install Linux codec tools
+      - name: Install Linux tools
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y nasm
+        run: sudo apt-get update && sudo apt-get install -y nasm ninja-build
+
+      - name: Install macOS tools
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Install Windows tools
+        if: runner.os == 'Windows'
+        run: choco install ninja -y --no-progress
 
       - name: Setup MSVC
         if: runner.os == 'Windows'
@@ -58,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y clang-format clang-tidy nasm ninja-build
@@ -103,7 +108,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y nasm ninja-build
