@@ -93,7 +93,10 @@ jobs:
 
       - name: Upload archive to R2
         run: |
-          aws s3 cp "$ARCHIVE_NAME" "s3://${R2_BUCKET}/tinyjpg/${VERSION}/" \
+          aws s3api put-object \
+            --bucket "${R2_BUCKET}" \
+            --key "tinyjpg/${VERSION}/${ARCHIVE_NAME}" \
+            --body "${ARCHIVE_NAME}" \
             --endpoint-url "${{ secrets.R2_ENDPOINT }}"
 
   build-linux-aarch64:
@@ -172,7 +175,10 @@ jobs:
 
       - name: Upload archive to R2
         run: |
-          aws s3 cp "$ARCHIVE_NAME" "s3://${R2_BUCKET}/tinyjpg/${VERSION}/" \
+          aws s3api put-object \
+            --bucket "${R2_BUCKET}" \
+            --key "tinyjpg/${VERSION}/${ARCHIVE_NAME}" \
+            --body "${ARCHIVE_NAME}" \
             --endpoint-url "${{ secrets.R2_ENDPOINT }}"
 
   build-macos-arm64:
@@ -239,7 +245,10 @@ jobs:
 
       - name: Upload archive to R2
         run: |
-          aws s3 cp "$ARCHIVE_NAME" "s3://${R2_BUCKET}/tinyjpg/${VERSION}/" \
+          aws s3api put-object \
+            --bucket "${R2_BUCKET}" \
+            --key "tinyjpg/${VERSION}/${ARCHIVE_NAME}" \
+            --body "${ARCHIVE_NAME}" \
             --endpoint-url "${{ secrets.R2_ENDPOINT }}"
 
   build-windows-x86_64:
@@ -329,7 +338,10 @@ jobs:
       - name: Upload archive to R2
         shell: pwsh
         run: |
-          aws s3 cp $env:ARCHIVE_NAME "s3://$env:R2_BUCKET/tinyjpg/$env:VERSION/" `
+          aws s3api put-object `
+            --bucket $env:R2_BUCKET `
+            --key "tinyjpg/$env:VERSION/$env:ARCHIVE_NAME" `
+            --body $env:ARCHIVE_NAME `
             --endpoint-url "${{ secrets.R2_ENDPOINT }}"
 
   manifest:
@@ -464,19 +476,34 @@ jobs:
 
       - name: Upload manifest, checksums, and install scripts to R2
         run: |
-          aws s3 cp manifest.json "s3://${R2_BUCKET}/tinyjpg/manifest.json" \
+          aws s3api put-object \
+            --bucket "${R2_BUCKET}" \
+            --key "tinyjpg/manifest.json" \
+            --body manifest.json \
             --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
             --content-type "application/json"
-          aws s3 cp manifest.json "s3://${R2_BUCKET}/tinyjpg/${VERSION}/manifest.json" \
+          aws s3api put-object \
+            --bucket "${R2_BUCKET}" \
+            --key "tinyjpg/${VERSION}/manifest.json" \
+            --body manifest.json \
             --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
             --content-type "application/json"
-          aws s3 cp SHA256SUMS "s3://${R2_BUCKET}/tinyjpg/${VERSION}/SHA256SUMS" \
+          aws s3api put-object \
+            --bucket "${R2_BUCKET}" \
+            --key "tinyjpg/${VERSION}/SHA256SUMS" \
+            --body SHA256SUMS \
             --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
             --content-type "text/plain"
-          aws s3 cp packaging/install/install.sh "s3://${R2_BUCKET}/install.sh" \
+          aws s3api put-object \
+            --bucket "${R2_BUCKET}" \
+            --key "install.sh" \
+            --body packaging/install/install.sh \
             --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
             --content-type "text/x-shellscript"
-          aws s3 cp packaging/install/install.ps1 "s3://${R2_BUCKET}/install.ps1" \
+          aws s3api put-object \
+            --bucket "${R2_BUCKET}" \
+            --key "install.ps1" \
+            --body packaging/install/install.ps1 \
             --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
             --content-type "text/plain"
 
