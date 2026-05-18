@@ -1,10 +1,12 @@
 Checks: >
   -*,
   bugprone-*,
-  cppcoreguidelines-*,
-  modernize-*,
   performance-*,
-  readability-*
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -performance-enum-size,
+  -readability-identifier-length,
+  -readability-magic-numbers
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
 CheckOptions:

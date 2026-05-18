@@ -19,8 +19,8 @@ Result<EnumValue> parse_enum(std::string_view input,
     }
   }
 
-  return std::unexpected(Error::invalid_argument(std::string{"unknown "} + std::string{field_name} +
-                                                 ": " + std::string{input}));
+  return unexpected(Error::invalid_argument(std::string{"unknown "} + std::string{field_name} +
+                                            ": " + std::string{input}));
 }
 
 [[nodiscard]] bool is_variant_char(unsigned char value) {
@@ -31,7 +31,7 @@ Result<EnumValue> parse_enum(std::string_view input,
 
 Result<Quality> Quality::from_percent(int value) {
   if (value < 1 || value > 100) {
-    return std::unexpected(Error::invalid_argument("quality must be between 1 and 100"));
+    return unexpected(Error::invalid_argument("quality must be between 1 and 100"));
   }
 
   return Quality{value};
@@ -39,7 +39,7 @@ Result<Quality> Quality::from_percent(int value) {
 
 Result<PositiveInt> PositiveInt::from(int value, std::string_view field_name) {
   if (value <= 0) {
-    return std::unexpected(Error::invalid_argument(std::string{field_name} + " must be positive"));
+    return unexpected(Error::invalid_argument(std::string{field_name} + " must be positive"));
   }
 
   return PositiveInt{value};
@@ -47,7 +47,7 @@ Result<PositiveInt> PositiveInt::from(int value, std::string_view field_name) {
 
 Result<NonNegativeInt> NonNegativeInt::from(int value, std::string_view field_name) {
   if (value < 0) {
-    return std::unexpected(
+    return unexpected(
         Error::invalid_argument(std::string{field_name} + " must be zero or greater"));
   }
 
@@ -56,13 +56,13 @@ Result<NonNegativeInt> NonNegativeInt::from(int value, std::string_view field_na
 
 Result<VariantName> VariantName::from(std::string value) {
   if (value.empty()) {
-    return std::unexpected(Error::invalid_argument("variant name must not be empty"));
+    return unexpected(Error::invalid_argument("variant name must not be empty"));
   }
 
   const auto valid = std::ranges::all_of(
       value, [](const char ch) { return is_variant_char(static_cast<unsigned char>(ch)); });
   if (!valid) {
-    return std::unexpected(
+    return unexpected(
         Error::invalid_argument("variant name may contain only letters, digits, '_' and '-'"));
   }
 

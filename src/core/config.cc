@@ -20,14 +20,14 @@ Result<EnumValue> parse_enum(std::string_view input,
     }
   }
 
-  return std::unexpected(
+  return unexpected(
       Error::config(std::string{"unknown "} + std::string{field_name} + ": " + std::string{input}));
 }
 
 [[nodiscard]] Result<VariantConfig> original_variant() {
   auto name = VariantName::from("original");
   if (!name) {
-    return std::unexpected(name.error());
+    return unexpected(name.error());
   }
 
   return VariantConfig{
@@ -47,12 +47,12 @@ Result<EnumValue> parse_enum(std::string_view input,
                                                   std::string suffix) {
   auto name = VariantName::from(std::move(name_value));
   if (!name) {
-    return std::unexpected(name.error());
+    return unexpected(name.error());
   }
 
   auto width = PositiveInt::from(max_width, "variant.max_width");
   if (!width) {
-    return std::unexpected(width.error());
+    return unexpected(width.error());
   }
 
   return VariantConfig{
@@ -70,22 +70,22 @@ Result<EnumValue> parse_enum(std::string_view input,
 [[nodiscard]] Result<VariantConfig> thumb_variant() {
   auto name = VariantName::from("thumb");
   if (!name) {
-    return std::unexpected(name.error());
+    return unexpected(name.error());
   }
 
   auto width = PositiveInt::from(320, "variant.max_width");
   if (!width) {
-    return std::unexpected(width.error());
+    return unexpected(width.error());
   }
 
   auto height = PositiveInt::from(320, "variant.max_height");
   if (!height) {
-    return std::unexpected(height.error());
+    return unexpected(height.error());
   }
 
   auto quality = Quality::from_percent(75);
   if (!quality) {
-    return std::unexpected(quality.error());
+    return unexpected(quality.error());
   }
 
   return VariantConfig{
@@ -171,16 +171,16 @@ Result<AppConfig> default_config() {
   auto medium_quality = Quality::from_percent(82);
 
   if (!workers) {
-    return std::unexpected(workers.error());
+    return unexpected(workers.error());
   }
   if (!queue_capacity) {
-    return std::unexpected(queue_capacity.error());
+    return unexpected(queue_capacity.error());
   }
   if (!stable_wait) {
-    return std::unexpected(stable_wait.error());
+    return unexpected(stable_wait.error());
   }
   if (!medium_quality) {
-    return std::unexpected(medium_quality.error());
+    return unexpected(medium_quality.error());
   }
 
   auto thumb = thumb_variant();
@@ -189,16 +189,16 @@ Result<AppConfig> default_config() {
   auto medium = sized_variant("medium", 1024, Codec::webp, *medium_quality, "-medium");
 
   if (!thumb) {
-    return std::unexpected(thumb.error());
+    return unexpected(thumb.error());
   }
   if (!original) {
-    return std::unexpected(original.error());
+    return unexpected(original.error());
   }
   if (!large) {
-    return std::unexpected(large.error());
+    return unexpected(large.error());
   }
   if (!medium) {
-    return std::unexpected(medium.error());
+    return unexpected(medium.error());
   }
 
   return AppConfig{
@@ -239,31 +239,31 @@ Result<AppConfig> default_config() {
 
 Result<void> validate_config(const AppConfig& config) {
   if (config.variants.empty()) {
-    return std::unexpected(Error::config("at least one variant is required"));
+    return unexpected(Error::config("at least one variant is required"));
   }
 
   auto names = std::set<std::string>{};
   for (const auto& variant : config.variants) {
     const auto [_, inserted] = names.insert(std::string{variant.name.value()});
     if (!inserted) {
-      return std::unexpected(
+      return unexpected(
           Error::config("duplicate variant name: " + std::string{variant.name.value()}));
     }
 
     if (!is_original_variant(variant) && !has_size_constraint(variant)) {
-      return std::unexpected(Error::config("variant " + std::string{variant.name.value()} +
-                                           " must set max_width or max_height"));
+      return unexpected(Error::config("variant " + std::string{variant.name.value()} +
+                                      " must set max_width or max_height"));
     }
 
     const auto mode = variant.mode.value_or(config.compress.mode);
     if (!codec_supports(variant.codec, mode)) {
-      return std::unexpected(Error::config("variant " + std::string{variant.name.value()} +
-                                           " uses an unsupported codec/mode pair"));
+      return unexpected(Error::config("variant " + std::string{variant.name.value()} +
+                                      " uses an unsupported codec/mode pair"));
     }
   }
 
   if (config.output.pattern.empty()) {
-    return std::unexpected(Error::config("output.pattern must not be empty"));
+    return unexpected(Error::config("output.pattern must not be empty"));
   }
 
   return {};

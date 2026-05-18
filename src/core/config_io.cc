@@ -16,7 +16,7 @@ namespace {
 
 [[nodiscard]] Result<int> checked_int(std::int64_t value, std::string_view field_name) {
   if (value < 0 || value > 1'000'000) {
-    return std::unexpected(Error::config(std::string{field_name} + " is outside the valid range"));
+    return unexpected(Error::config(std::string{field_name} + " is outside the valid range"));
   }
   return static_cast<int>(value);
 }
@@ -51,14 +51,14 @@ Result<VariantConfig> parse_variant(const toml::table& table, const CompressionC
   const auto name_text = table["name"].value_or(std::string{});
   auto name = VariantName::from(name_text);
   if (!name) {
-    return std::unexpected(name.error());
+    return unexpected(name.error());
   }
 
   auto codec = Codec::auto_select;
   if (auto text = table["codec"].value<std::string>()) {
     auto parsed = parse_codec(*text);
     if (!parsed) {
-      return std::unexpected(parsed.error());
+      return unexpected(parsed.error());
     }
     codec = *parsed;
   }
@@ -67,7 +67,7 @@ Result<VariantConfig> parse_variant(const toml::table& table, const CompressionC
   if (auto text = table["mode"].value<std::string>()) {
     auto parsed = parse_fidelity_mode(*text);
     if (!parsed) {
-      return std::unexpected(parsed.error());
+      return unexpected(parsed.error());
     }
     mode = *parsed;
   }
@@ -76,11 +76,11 @@ Result<VariantConfig> parse_variant(const toml::table& table, const CompressionC
   if (auto value = table["quality"].value<std::int64_t>()) {
     auto checked = checked_int(*value, "variant.quality");
     if (!checked) {
-      return std::unexpected(checked.error());
+      return unexpected(checked.error());
     }
     auto parsed = Quality::from_percent(*checked);
     if (!parsed) {
-      return std::unexpected(parsed.error());
+      return unexpected(parsed.error());
     }
     quality = *parsed;
   }
@@ -89,11 +89,11 @@ Result<VariantConfig> parse_variant(const toml::table& table, const CompressionC
   if (auto value = table["max_width"].value<std::int64_t>()) {
     auto checked = checked_int(*value, "variant.max_width");
     if (!checked) {
-      return std::unexpected(checked.error());
+      return unexpected(checked.error());
     }
     auto parsed = PositiveInt::from(*checked, "variant.max_width");
     if (!parsed) {
-      return std::unexpected(parsed.error());
+      return unexpected(parsed.error());
     }
     max_width = *parsed;
   }
@@ -102,11 +102,11 @@ Result<VariantConfig> parse_variant(const toml::table& table, const CompressionC
   if (auto value = table["max_height"].value<std::int64_t>()) {
     auto checked = checked_int(*value, "variant.max_height");
     if (!checked) {
-      return std::unexpected(checked.error());
+      return unexpected(checked.error());
     }
     auto parsed = PositiveInt::from(*checked, "variant.max_height");
     if (!parsed) {
-      return std::unexpected(parsed.error());
+      return unexpected(parsed.error());
     }
     max_height = *parsed;
   }
@@ -115,7 +115,7 @@ Result<VariantConfig> parse_variant(const toml::table& table, const CompressionC
   if (auto text = table["fit"].value<std::string>()) {
     auto parsed = parse_fit_mode(*text);
     if (!parsed) {
-      return std::unexpected(parsed.error());
+      return unexpected(parsed.error());
     }
     fit = *parsed;
   }
@@ -162,25 +162,25 @@ void append_legacy_paths(std::ostringstream& out, const YAML::Node& paths) {
 Result<AppConfig> load_toml_config(const std::filesystem::path& path) {
   auto config = default_config();
   if (!config) {
-    return std::unexpected(config.error());
+    return unexpected(config.error());
   }
 
   auto table = toml::table{};
   try {
     table = toml::parse_file(path.string());
   } catch (const toml::parse_error& error) {
-    return std::unexpected(Error::filesystem(path, std::string{error.description()}));
+    return unexpected(Error::filesystem(path, std::string{error.description()}));
   }
 
   if (const auto* general = table["general"].as_table()) {
     if (auto value = (*general)["workers"].value<std::int64_t>()) {
       auto checked = checked_int(*value, "general.workers");
       if (!checked) {
-        return std::unexpected(checked.error());
+        return unexpected(checked.error());
       }
       auto workers = NonNegativeInt::from(*checked, "general.workers");
       if (!workers) {
-        return std::unexpected(workers.error());
+        return unexpected(workers.error());
       }
       config->general.workers = *workers;
     }
@@ -188,11 +188,11 @@ Result<AppConfig> load_toml_config(const std::filesystem::path& path) {
     if (auto value = (*general)["queue_capacity"].value<std::int64_t>()) {
       auto checked = checked_int(*value, "general.queue_capacity");
       if (!checked) {
-        return std::unexpected(checked.error());
+        return unexpected(checked.error());
       }
       auto capacity = PositiveInt::from(*checked, "general.queue_capacity");
       if (!capacity) {
-        return std::unexpected(capacity.error());
+        return unexpected(capacity.error());
       }
       config->general.queue_capacity = *capacity;
     }
@@ -200,11 +200,11 @@ Result<AppConfig> load_toml_config(const std::filesystem::path& path) {
     if (auto value = (*general)["stable_wait_ms"].value<std::int64_t>()) {
       auto checked = checked_int(*value, "general.stable_wait_ms");
       if (!checked) {
-        return std::unexpected(checked.error());
+        return unexpected(checked.error());
       }
       auto stable_wait = NonNegativeInt::from(*checked, "general.stable_wait_ms");
       if (!stable_wait) {
-        return std::unexpected(stable_wait.error());
+        return unexpected(stable_wait.error());
       }
       config->general.stable_wait_ms = *stable_wait;
     }
@@ -212,7 +212,7 @@ Result<AppConfig> load_toml_config(const std::filesystem::path& path) {
     if (auto value = (*general)["log_level"].value<std::string>()) {
       auto log_level = parse_log_level(*value);
       if (!log_level) {
-        return std::unexpected(log_level.error());
+        return unexpected(log_level.error());
       }
       config->general.log_level = *log_level;
     }
@@ -232,14 +232,14 @@ Result<AppConfig> load_toml_config(const std::filesystem::path& path) {
     if (auto value = (*compress)["mode"].value<std::string>()) {
       auto mode = parse_fidelity_mode(*value);
       if (!mode) {
-        return std::unexpected(mode.error());
+        return unexpected(mode.error());
       }
       config->compress.mode = *mode;
     }
     if (auto value = (*compress)["effort"].value<std::string>()) {
       auto effort = parse_effort_level(*value);
       if (!effort) {
-        return std::unexpected(effort.error());
+        return unexpected(effort.error());
       }
       config->compress.effort = *effort;
     }
@@ -257,11 +257,11 @@ Result<AppConfig> load_toml_config(const std::filesystem::path& path) {
     for (const auto& node : *variants) {
       const auto* variant_table = node.as_table();
       if (variant_table == nullptr) {
-        return std::unexpected(Error::config("variant entries must be tables"));
+        return unexpected(Error::config("variant entries must be tables"));
       }
       auto variant = parse_variant(*variant_table, config->compress);
       if (!variant) {
-        return std::unexpected(variant.error());
+        return unexpected(variant.error());
       }
       config->variants.push_back(*std::move(variant));
     }
@@ -275,7 +275,7 @@ Result<AppConfig> load_toml_config(const std::filesystem::path& path) {
     if (auto value = (*output)["on_exist"].value<std::string>()) {
       auto on_exist = parse_on_exist(*value);
       if (!on_exist) {
-        return std::unexpected(on_exist.error());
+        return unexpected(on_exist.error());
       }
       config->output.on_exist = *on_exist;
     }
@@ -283,7 +283,7 @@ Result<AppConfig> load_toml_config(const std::filesystem::path& path) {
 
   auto valid = validate_config(*config);
   if (!valid) {
-    return std::unexpected(valid.error());
+    return unexpected(valid.error());
   }
 
   return config;
@@ -292,7 +292,7 @@ Result<AppConfig> load_toml_config(const std::filesystem::path& path) {
 Result<void> validate_config_file(const std::filesystem::path& path) {
   auto config = load_toml_config(path);
   if (!config) {
-    return std::unexpected(config.error());
+    return unexpected(config.error());
   }
   return {};
 }
@@ -300,7 +300,7 @@ Result<void> validate_config_file(const std::filesystem::path& path) {
 Result<std::string> render_default_config() {
   auto config = default_config();
   if (!config) {
-    return std::unexpected(config.error());
+    return unexpected(config.error());
   }
 
   auto out = std::ostringstream{};
@@ -360,7 +360,7 @@ Result<std::string> migrate_legacy_yaml(const std::filesystem::path& path) {
   try {
     yaml = YAML::LoadFile(path.string());
   } catch (const YAML::Exception& error) {
-    return std::unexpected(Error::filesystem(path, error.what()));
+    return unexpected(Error::filesystem(path, error.what()));
   }
 
   const auto general = yaml["general"];

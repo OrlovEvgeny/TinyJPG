@@ -1,10 +1,11 @@
 #pragma once
 
-#include <expected>
 #include <filesystem>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
+#include <variant>
 
 namespace tinyjpg {
 
@@ -46,7 +47,82 @@ struct Error {
   }
 };
 
+struct Unexpected {
+  Error error;
+};
+
+[[nodiscard]] inline Unexpected unexpected(Error error) {
+  return Unexpected{.error = std::move(error)};
+}
+
 template <typename T>
-using Result = std::expected<T, Error>;
+class Result {
+ public:
+  Result(const T& value) : storage_{value} {}
+  Result(T&& value) : storage_{std::move(value)} {}
+  Result(Unexpected error) : storage_{std::move(error.error)} {}
+
+  [[nodiscard]] bool has_value() const noexcept { return std::holds_alternative<T>(storage_); }
+  [[nodiscard]] explicit operator bool() const noexcept { return has_value(); }
+
+  [[nodiscard]] T& value() & {
+    if (!has_value()) {
+      throw std::logic_error{"accessed error Result value"};
+    }
+    return std::get<T>(storage_);
+  }
+
+  [[nodiscard]] const T& value() const& {
+    if (!has_value()) {
+      throw std::logic_error{"accessed error Result value"};
+    }
+    return std::get<T>(storage_);
+  }
+
+  [[nodiscard]] T&& value() && {
+    if (!has_value()) {
+      throw std::logic_error{"accessed error Result value"};
+    }
+    return std::get<T>(std::move(storage_));
+  }
+
+  [[nodiscard]] Error& error() & { return std::get<Error>(storage_); }
+  [[nodiscard]] const Error& error() const& { return std::get<Error>(storage_); }
+
+  [[nodiscard]] T& operator*() & { return value(); }
+  [[nodiscard]] const T& operator*() const& { return value(); }
+  [[nodiscard]] T&& operator*() && { return std::move(*this).value(); }
+
+  [[nodiscard]] T* operator->() { return &value(); }
+  [[nodiscard]] const T* operator->() const { return &value(); }
+
+ private:
+  std::variant<T, Error> storage_;
+};
+
+template <>
+class Result<void> {
+ public:
+  Result() = default;
+  Result(Unexpected error) : storage_{std::move(error.error)} {}
+
+  [[nodiscard]] bool has_value() const noexcept {
+    return std::holds_alternative<std::monostate>(storage_);
+  }
+
+  [[nodiscard]] explicit operator bool() const noexcept { return has_value(); }
+
+  void value() const {
+    if (!has_value()) {
+      throw std::logic_error{"accessed error Result value"};
+    }
+  }
+
+  [[nodiscard]] Error& error() & { return std::get<Error>(storage_); }
+  [[nodiscard]] const Error& error() const& { return std::get<Error>(storage_); }
+
+ private:
+  std::variant<std::monostate, Error> storage_{std::monostate{}};
+};
 
 }  // namespace tinyjpg
