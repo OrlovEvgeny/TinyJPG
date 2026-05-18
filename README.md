@@ -1,20 +1,47 @@
-<p align="center"><img src="https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/doc/logo.png" width="360"></p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/doc/logo.png" width="340" alt="TinyJPG">
+</p>
+
+<p align="center">
+  <a href="https://github.com/OrlovEvgeny/TinyJPG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/OrlovEvgeny/TinyJPG/actions/workflows/ci.yml/badge.svg?branch=feature/cpp-rewrite"></a>
+  <img alt="C++23" src="https://img.shields.io/badge/C%2B%2B-23-00599C?logo=cplusplus&logoColor=white">
+  <img alt="CMake" src="https://img.shields.io/badge/build-CMake-064F8C?logo=cmake&logoColor=white">
+  <img alt="vcpkg" src="https://img.shields.io/badge/deps-vcpkg-2F74C0">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
+</p>
 
 # TinyJPG
 
-TinyJPG is a C++23 command line image optimizer for JPEG, PNG, WebP, AVIF, and JPEG XL workflows. It can optimize explicit files, scan directories, watch paths for changes, generate responsive variants, and emit text, table, or JSON output for automation.
+TinyJPG is a C++23 image optimizer built for fast, repeatable asset pipelines. It
+compresses JPEG, PNG, WebP, AVIF, and JPEG XL files in-process, generates
+responsive variants, scans folders, watches upload directories, and reports
+results as text, tables, or JSON.
 
-## Features
+The executable is available as both `tinyjpg` and the short alias `tj`.
 
-- In-process image decoding and encoding with libjpeg-turbo, libpng, libwebp, libavif, and libjxl.
-- `run`, `scan`, and `watch` commands for one-shot and continuous optimization.
-- Built-in presets for common responsive image variants.
-- TOML configuration with validation and default config generation.
-- Dry-run mode, structured output, runtime diagnostics, and shell completions.
+## Preview
 
-## Build
+| Before | After |
+| --- | --- |
+| ![Original portrait before compression](doc/meg-before.jpg) | ![Portrait after TinyJPG compression](doc/meg-after.jpg) |
+| 1.5 MB JPEG | 243 KB JPEG |
 
-Install CMake, Ninja, a C++23 compiler, and vcpkg. Then configure with the vcpkg toolchain:
+This sample keeps the original 2236 x 1792 dimensions and reduces the file by
+about 84%.
+
+## Why TinyJPG
+
+- Native C++23 command line tool with no shell-outs for image conversion.
+- Codec coverage for JPEG, PNG, WebP, AVIF, and JPEG XL workflows.
+- One-shot `run`, recursive `scan`, and continuous `watch` modes.
+- Built-in responsive presets plus TOML configuration for custom variants.
+- Atomic writes, dry-run planning, skip-if-not-smaller behavior, and structured
+  output for CI and automation.
+- Cross-platform CMake and vcpkg build on Linux, macOS, and Windows.
+
+## Install
+
+Build from source with CMake, Ninja, a C++23 compiler, and vcpkg:
 
 ```bash
 cmake -S . -B build -G Ninja \
@@ -23,22 +50,59 @@ cmake -S . -B build -G Ninja \
   -DBUILD_TESTING=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
+cmake --install build --prefix ~/.local
 ```
 
-The binary is written to `build/tinyjpg`.
+Create local packages with CPack:
+
+```bash
+cpack --config build/CPackConfig.cmake
+```
+
+## Usage
+
+Optimize explicit files:
+
+```bash
+tj run image.jpg image.png --config tinyjpg.toml --format table
+```
+
+Scan files and directories:
+
+```bash
+tj scan ./images --preset web --dry-run --format json
+```
+
+Watch a directory for new or changed images:
+
+```bash
+tj watch ./uploads --config tinyjpg.toml
+```
+
+Inspect built-in responsive presets:
+
+```bash
+tj presets list
+```
+
+Generate shell completion:
+
+```bash
+tj completion zsh > _tj
+```
 
 ## Configuration
 
 Generate a default TOML config:
 
 ```bash
-tinyjpg config print --defaults > tinyjpg.toml
+tj config print --defaults > tinyjpg.toml
 ```
 
 Validate it before using it in automation:
 
 ```bash
-tinyjpg config validate tinyjpg.toml
+tj config validate tinyjpg.toml
 ```
 
 Example config:
@@ -78,38 +142,13 @@ directory = ""
 on_exist = "skip"
 ```
 
-## Usage
+## Service Assets
 
-Optimize explicit files:
+Install packages include service helpers for long-running optimization:
 
-```bash
-tinyjpg run image.jpg image.png --config tinyjpg.toml --format table
-```
-
-Scan files and directories:
-
-```bash
-tinyjpg scan ./images --preset web --dry-run --format json
-```
-
-Watch a directory:
-
-```bash
-tinyjpg watch ./uploads --config tinyjpg.toml
-```
-
-Inspect available presets and runtime support:
-
-```bash
-tinyjpg presets list
-tinyjpg doctor --format table
-```
-
-Generate shell completion:
-
-```bash
-tinyjpg completion zsh > _tinyjpg
-```
+- systemd unit, sysusers, and tmpfiles snippets for Linux.
+- launchd plist template for macOS.
+- PowerShell install and uninstall scripts for Windows services.
 
 ## License
 

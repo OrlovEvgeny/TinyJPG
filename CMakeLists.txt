@@ -119,6 +119,13 @@ target_link_libraries(tinyjpg PRIVATE tinyjpg::tinyjpg)
 target_compile_features(tinyjpg PRIVATE cxx_std_23)
 set_target_properties(tinyjpg PROPERTIES CXX_EXTENSIONS OFF)
 tinyjpg_apply_warnings(tinyjpg)
+add_custom_command(
+  TARGET tinyjpg
+  POST_BUILD
+  COMMAND
+    ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:tinyjpg>
+    "$<TARGET_FILE_DIR:tinyjpg>/tj$<TARGET_FILE_SUFFIX:tinyjpg>"
+  VERBATIM)
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT tinyjpg_ipo_supported OUTPUT tinyjpg_ipo_error)
@@ -153,6 +160,8 @@ if(BUILD_TESTING)
   tinyjpg_add_test(tinyjpg_service_test tests/service_test.cc)
   tinyjpg_add_test(tinyjpg_version_test tests/version_test.cc)
   add_test(NAME tinyjpg.version.cli COMMAND tinyjpg --version)
+  add_test(NAME tinyjpg.alias.version.cli
+           COMMAND "$<TARGET_FILE_DIR:tinyjpg>/tj$<TARGET_FILE_SUFFIX:tinyjpg>" --version)
 
   add_executable(tinyjpg_codec_size_benchmark bench/codec_size_benchmark.cc)
   target_link_libraries(tinyjpg_codec_size_benchmark PRIVATE tinyjpg::tinyjpg)
@@ -163,6 +172,8 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS tinyjpg RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(PROGRAMS $<TARGET_FILE:tinyjpg> DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RENAME "tj$<TARGET_FILE_SUFFIX:tinyjpg>")
 install(FILES README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
 set(TINYJPG_PACKAGING_DIR "${CMAKE_CURRENT_BINARY_DIR}/packaging")
