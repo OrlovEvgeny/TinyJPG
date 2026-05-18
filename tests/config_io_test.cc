@@ -1,5 +1,6 @@
 #include "tinyjpg/core/config_io.hh"
 
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -68,7 +69,7 @@ TEST_CASE("config CLI commands return stable exit codes") {
   const auto path = write_temp_file("tinyjpg-cli-config.toml", rendered);
 
   const auto path_text = path.string();
-  const std::array validate_args{
+  const std::array<char const*, 4> validate_args{
       "tinyjpg",
       "config",
       "validate",
@@ -76,7 +77,7 @@ TEST_CASE("config CLI commands return stable exit codes") {
   };
   CHECK(tinyjpg::app::run(validate_args) == tinyjpg::app::ExitCode::ok);
 
-  constexpr std::array print_args{"tinyjpg", "config", "print", "--defaults"};
+  constexpr std::array<char const*, 4> print_args{"tinyjpg", "config", "print", "--defaults"};
   CHECK(tinyjpg::app::run(print_args) == tinyjpg::app::ExitCode::ok);
 }
 #else
@@ -116,7 +117,7 @@ int main() {
   }
 
   const auto path_text = path.string();
-  const std::array validate_args{
+  const std::array<char const*, 4> validate_args{
       "tinyjpg",
       "config",
       "validate",
