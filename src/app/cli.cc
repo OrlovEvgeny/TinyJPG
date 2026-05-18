@@ -1,6 +1,7 @@
 #include "tinyjpg/app/cli.hh"
 
 #include <CLI/CLI.hpp>
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
@@ -116,13 +117,10 @@ void process_paths(const std::vector<std::filesystem::path>& paths, const AppCon
 [[nodiscard]] bool is_generated_variant_path(const std::filesystem::path& path,
                                              const AppConfig& config) {
   const auto stem = path.stem().string();
-  for (const auto& variant : config.variants) {
+  return std::ranges::any_of(config.variants, [&stem](const VariantConfig& variant) {
     const auto suffix = variant.suffix.empty() ? std::string{"-optimized"} : variant.suffix;
-    if (ends_with(stem, suffix)) {
-      return true;
-    }
-  }
-  return false;
+    return ends_with(stem, suffix);
+  });
 }
 
 [[nodiscard]] Result<std::vector<std::filesystem::path>> collect_scan_files(
