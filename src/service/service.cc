@@ -14,7 +14,6 @@
 #include <ostream>
 #include <span>
 #include <sstream>
-#include <stop_token>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -165,11 +164,10 @@ class WorkQueue {
  public:
   explicit WorkQueue(std::size_t capacity) : capacity_{std::max<std::size_t>(capacity, 1U)} {}
 
-  [[nodiscard]] bool push(std::filesystem::path path, std::stop_token stop_token) {
+  [[nodiscard]] bool push(std::filesystem::path path) {
     auto lock = std::unique_lock{mutex_};
-    const auto ready =
-        condition_.wait(lock, stop_token, [this] { return closed_ || queue_.size() < capacity_; });
-    if (!ready || closed_) {
+    condition_.wait(lock, [this] { return closed_ || queue_.size() < capacity_; });
+    if (closed_) {
       return false;
     }
 
@@ -178,11 +176,10 @@ class WorkQueue {
     return true;
   }
 
-  [[nodiscard]] std::optional<QueueItem> pop(std::stop_token stop_token) {
+  [[nodiscard]] std::optional<QueueItem> pop() {
     auto lock = std::unique_lock{mutex_};
-    const auto ready =
-        condition_.wait(lock, stop_token, [this] { return closed_ || !queue_.empty(); });
-    if (!ready || queue_.empty()) {
+    condition_.wait(lock, [this] { return closed_ || !queue_.empty(); });
+    if (queue_.empty()) {
       return std::nullopt;
     }
 
@@ -261,7 +258,7 @@ void print_process_result(const ProcessResult& result, std::ostream& out) {
 [[nodiscard]] Result<ServiceSummary> process_with_workers(
     std::span<const std::filesystem::path> files, std::span<const std::filesystem::path> roots,
     const AppConfig& config, std::ostream& out, bool use_stability_check,
-    std::stop_token stop_token) {
+    StopPredicate stop_requested) {
   auto summary = ServiceSummary{
       .files_seen = files.size(),
       .files_processed = 0,
@@ -272,13 +269,13 @@ void print_process_result(const ProcessResult& result, std::ostream& out) {
   auto ledger = JobLedger{ledger_path_for(roots, config)};
   auto queue = WorkQueue{static_cast<std::size_t>(config.general.queue_capacity.value())};
   auto mutex = std::mutex{};
-  auto workers = std::vector<std::jthread>{};
+  auto workers = std::vector<std::thread>{};
   const auto count = worker_count(config);
   workers.reserve(count);
 
   for (auto remaining = count; remaining > 0; --remaining) {
-    workers.emplace_back([&](std::stop_token worker_stop) {
-      while (auto item = queue.pop(worker_stop)) {
+    workers.emplace_back([&] {
+      while (auto item = queue.pop()) {
         if (use_stability_check && !is_stable(item->path, config)) {
           auto lock = std::lock_guard{mutex};
           ++summary.files_skipped;
@@ -301,7 +298,7 @@ void print_process_result(const ProcessResult& result, std::ostream& out) {
   }
 
   for (const auto& file : files) {
-    if (stop_token.stop_requested()) {
+    if (stop_requested != nullptr && stop_requested()) {
       break;
     }
     auto already_processed = false;
@@ -315,13 +312,17 @@ void print_process_result(const ProcessResult& result, std::ostream& out) {
     if (already_processed) {
       continue;
     }
-    if (!queue.push(file, stop_token)) {
+    if (!queue.push(file)) {
       break;
     }
   }
 
   queue.close();
-  workers.clear();
+  for (auto& worker : workers) {
+    if (worker.joinable()) {
+      worker.join();
+    }
+  }
   return summary;
 }
 
@@ -359,12 +360,12 @@ Result<ServiceSummary> scan_paths(std::span<const std::filesystem::path> input_p
   if (!files) {
     return unexpected(files.error());
   }
-  return process_with_workers(*files, input_paths, config, out, false, std::stop_token{});
+  return process_with_workers(*files, input_paths, config, out, false, nullptr);
 }
 
 Result<ServiceSummary> watch_paths(std::span<const std::filesystem::path> input_paths,
                                    const AppConfig& config, std::ostream& out,
-                                   std::stop_token stop_token) {
+                                   StopPredicate stop_requested) {
   auto summary = ServiceSummary{
       .files_seen = 0,
       .files_processed = 0,
@@ -372,13 +373,13 @@ Result<ServiceSummary> watch_paths(std::span<const std::filesystem::path> input_
       .errors = 0,
   };
 
-  while (!stop_token.stop_requested()) {
+  while (stop_requested == nullptr || !stop_requested()) {
     auto files = collect_image_files(input_paths, config);
     if (!files) {
       return unexpected(files.error());
     }
 
-    auto pass = process_with_workers(*files, input_paths, config, out, true, stop_token);
+    auto pass = process_with_workers(*files, input_paths, config, out, true, stop_requested);
     if (!pass) {
       return unexpected(pass.error());
     }

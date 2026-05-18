@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
-#include <stop_token>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -20,13 +19,11 @@ namespace tinyjpg::app {
 namespace {
 
 constexpr auto kUsage = "Usage: tinyjpg [--version] [--help] <command>\n";
-auto* active_stop_source = static_cast<std::stop_source*>(nullptr);
+volatile std::sig_atomic_t active_stop_requested = 0;
 
-void request_stop(int /*signal*/) {
-  if (active_stop_source != nullptr) {
-    active_stop_source->request_stop();
-  }
-}
+void request_stop(int /*signal*/) { active_stop_requested = 1; }
+
+[[nodiscard]] bool stop_requested() { return active_stop_requested != 0; }
 
 [[noreturn]] void throw_usage(const Error& error) {
   throw CLI::RuntimeError(error.message, static_cast<int>(ExitCode::usage));
@@ -159,13 +156,11 @@ void watch_command(const std::vector<std::string>& input_paths, const std::strin
     throw_usage(Error::config("watch requires at least one path"));
   }
 
-  auto stop_source = std::stop_source{};
-  active_stop_source = &stop_source;
+  active_stop_requested = 0;
   std::signal(SIGINT, request_stop);
   std::signal(SIGTERM, request_stop);
 
-  const auto result = watch_paths(paths, *config, std::cout, stop_source.get_token());
-  active_stop_source = nullptr;
+  const auto result = watch_paths(paths, *config, std::cout, stop_requested);
   if (!result) {
     throw_usage(result.error());
   }

@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <iosfwd>
 #include <span>
-#include <stop_token>
 #include <vector>
 
 #include "tinyjpg/core/config.hh"
@@ -18,6 +17,8 @@ struct ServiceSummary {
   std::size_t errors;
 };
 
+using StopPredicate = bool (*)();
+
 [[nodiscard]] Result<std::vector<std::filesystem::path>> collect_image_files(
     std::span<const std::filesystem::path> input_paths, const AppConfig& config);
 
@@ -26,6 +27,6 @@ struct ServiceSummary {
 
 [[nodiscard]] Result<ServiceSummary> watch_paths(std::span<const std::filesystem::path> input_paths,
                                                  const AppConfig& config, std::ostream& out,
-                                                 std::stop_token stop_token);
+                                                 StopPredicate stop_requested);
 
 }  // namespace tinyjpg
