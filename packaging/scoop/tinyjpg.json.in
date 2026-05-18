@@ -1,0 +1,21 @@
+{
+  "version": "@PROJECT_VERSION@",
+  "description": "Cross-platform image optimizer",
+  "homepage": "@PROJECT_HOMEPAGE_URL@",
+  "license": "MIT",
+  "architecture": {
+    "64bit": {
+      "url": "https://tinyjpg.eorlov.org/tinyjpg/@PROJECT_VERSION@/tinyjpg-@PROJECT_VERSION@-windows-x86_64.zip",
+      "hash": "sha256:TO_BE_FILLED_BY_RELEASE"
+    }
+  },
+  "bin": "tinyjpg.exe",
+  "checkver": "github",
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://tinyjpg.eorlov.org/tinyjpg/$version/tinyjpg-$version-windows-x86_64.zip"
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+d /etc/tinyjpg 0750 root tinyjpg -
+d /var/lib/tinyjpg 0750 tinyjpg tinyjpg -
+d /var/log/tinyjpg 0750 tinyjpg tinyjpg -
