@@ -35,11 +35,8 @@ jobs:
           echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
           echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
 
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v5
-
-      - name: Install Linux codec tools
-        run: sudo apt-get update && sudo apt-get install -y nasm
+      - name: Install Linux tools
+        run: sudo apt-get update && sudo apt-get install -y nasm ninja-build
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -108,11 +105,8 @@ jobs:
           echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
           echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
 
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v5
-
-      - name: Install Linux codec tools
-        run: sudo apt-get update && sudo apt-get install -y nasm
+      - name: Install Linux tools
+        run: sudo apt-get update && sudo apt-get install -y nasm ninja-build
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
