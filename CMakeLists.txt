@@ -163,3 +163,56 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS tinyjpg RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
+set(TINYJPG_PACKAGING_DIR "${CMAKE_CURRENT_BINARY_DIR}/packaging")
+
+configure_file(packaging/systemd/tinyjpg.service.in
+               "${TINYJPG_PACKAGING_DIR}/systemd/tinyjpg.service" @ONLY)
+configure_file(packaging/launchd/org.tinyjpg.plist.in
+               "${TINYJPG_PACKAGING_DIR}/launchd/org.tinyjpg.plist" @ONLY)
+configure_file(packaging/homebrew/tinyjpg.rb.in
+               "${TINYJPG_PACKAGING_DIR}/homebrew/tinyjpg.rb" @ONLY)
+configure_file(packaging/scoop/tinyjpg.json.in
+               "${TINYJPG_PACKAGING_DIR}/scoop/tinyjpg.json" @ONLY)
+
+install(FILES "${TINYJPG_PACKAGING_DIR}/systemd/tinyjpg.service"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/tinyjpg/systemd")
+install(FILES packaging/systemd/tinyjpg.sysusers packaging/systemd/tinyjpg.tmpfiles
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/tinyjpg/systemd")
+install(FILES "${TINYJPG_PACKAGING_DIR}/launchd/org.tinyjpg.plist"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/tinyjpg/launchd")
+install(FILES packaging/windows/install-service.ps1 packaging/windows/uninstall-service.ps1
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/tinyjpg/windows")
+install(FILES "${TINYJPG_PACKAGING_DIR}/homebrew/tinyjpg.rb"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/tinyjpg/homebrew")
+install(FILES "${TINYJPG_PACKAGING_DIR}/scoop/tinyjpg.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/tinyjpg/scoop")
+
+if(BUILD_TESTING)
+  add_test(
+    NAME tinyjpg.packaging.assets
+    COMMAND
+      ${CMAKE_COMMAND} -DTINYJPG_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+      -DTINYJPG_BINARY_DIR=${PROJECT_BINARY_DIR} -P
+      ${PROJECT_SOURCE_DIR}/tests/packaging_check.cmake)
+endif()
+
+set(CPACK_PACKAGE_NAME "TinyJPG")
+set(CPACK_PACKAGE_VENDOR "TinyJPG")
+set(CPACK_PACKAGE_CONTACT "maintainers@tinyjpg.local")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Cross-platform image optimizer")
+set(CPACK_PACKAGE_HOMEPAGE_URL "${PROJECT_HOMEPAGE_URL}")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_CHECKSUM SHA256)
+set(CPACK_GENERATOR TGZ ZIP)
+
+if(UNIX AND NOT APPLE)
+  list(APPEND CPACK_GENERATOR DEB)
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "TinyJPG Maintainers")
+  set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
+  set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+endif()
+
+include(CPack)

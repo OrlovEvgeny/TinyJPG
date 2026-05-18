@@ -1,0 +1,25 @@
+class Tinyjpg < Formula
+  desc "Cross-platform image optimizer"
+  homepage "@PROJECT_HOMEPAGE_URL@"
+  version "@PROJECT_VERSION@"
+
+  on_macos do
+    url "https://github.com/OrlovEvgeny/TinyJPG/releases/download/v#{version}/tinyjpg-#{version}-macos.tar.gz"
+  end
+
+  def install
+    bin.install "tinyjpg"
+    pkgshare.install Dir["share/tinyjpg/*"] if Dir.exist?("share/tinyjpg")
+  end
+
+  service do
+    run [opt_bin/"tinyjpg", "watch", "--config", etc/"tinyjpg/tinyjpg.toml"]
+    keep_alive true
+    log_path var/"log/tinyjpg/out.log"
+    error_log_path var/"log/tinyjpg/err.log"
+  end
+
+  test do
+    assert_match "@PROJECT_VERSION@", shell_output("#{bin}/tinyjpg --version")
+  end
+end

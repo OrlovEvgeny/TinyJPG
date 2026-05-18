@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.tinyjpg</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@CMAKE_INSTALL_FULL_BINDIR@/tinyjpg</string>
+    <string>watch</string>
+    <string>--config</string>
+    <string>/etc/tinyjpg/tinyjpg.toml</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>Crashed</key>
+    <true/>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>ExitTimeOut</key>
+  <integer>30</integer>
+  <key>UserName</key>
+  <string>_tinyjpg</string>
+  <key>StandardOutPath</key>
+  <string>/var/log/tinyjpg/out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/var/log/tinyjpg/err.log</string>
+</dict>
+</plist>
