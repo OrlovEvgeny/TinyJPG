@@ -36,7 +36,7 @@ jobs:
           echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
 
       - name: Install Linux tools
-        run: sudo apt-get update && sudo apt-get install -y nasm ninja-build
+        run: sudo apt-get update && sudo apt-get install -y awscli nasm ninja-build
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -71,9 +71,6 @@ jobs:
           cp packaging/systemd/tinyjpg.tmpfiles staging/
           cp README.md LICENSE staging/
           tar czf "$ARCHIVE_NAME" -C staging .
-
-      - name: Install AWS CLI
-        uses: unfor19/install-aws-cli-action@v1
 
       - name: Configure AWS CLI for R2
         run: |
@@ -106,7 +103,7 @@ jobs:
           echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
 
       - name: Install Linux tools
-        run: sudo apt-get update && sudo apt-get install -y nasm ninja-build
+        run: sudo apt-get update && sudo apt-get install -y awscli nasm ninja-build
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -142,9 +139,6 @@ jobs:
           cp README.md LICENSE staging/
           tar czf "$ARCHIVE_NAME" -C staging .
 
-      - name: Install AWS CLI
-        uses: unfor19/install-aws-cli-action@v1
-
       - name: Configure AWS CLI for R2
         run: |
           aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
@@ -175,8 +169,8 @@ jobs:
           echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
           echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
 
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v5
+      - name: Install macOS tools
+        run: brew install awscli ninja
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -211,9 +205,6 @@ jobs:
           cp build/packaging/homebrew/tinyjpg.rb staging/
           cp README.md LICENSE staging/
           tar czf "$ARCHIVE_NAME" -C staging .
-
-      - name: Install AWS CLI
-        uses: unfor19/install-aws-cli-action@v1
 
       - name: Configure AWS CLI for R2
         run: |
@@ -343,7 +334,7 @@ jobs:
           echo "RELEASE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
 
       - name: Install AWS CLI
-        uses: unfor19/install-aws-cli-action@v1
+        run: sudo apt-get update && sudo apt-get install -y awscli
 
       - name: Configure AWS CLI for R2
         run: |
@@ -644,11 +635,11 @@ jobs:
             echo "### Windows (one command)"
             echo "Open PowerShell and run:"
             echo '```powershell'
-            echo "irm https://pq.eorlov.org/install.ps1 | iex"
+            echo "irm https://tj.eorlov.org/install.ps1 | iex"
             echo '```'
             echo "Install a specific version:"
             echo '```powershell'
-            echo "irm https://pq.eorlov.org/install.ps1 -OutFile install.ps1; ./install.ps1 -Version $VERSION"
+            echo "irm https://tj.eorlov.org/install.ps1 -OutFile install.ps1; ./install.ps1 -Version $VERSION"
             echo '```'
             echo "### Package managers"
             echo "Homebrew (macOS):"

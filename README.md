@@ -21,6 +21,18 @@ results as text, tables, or JSON.
 
 The executable is available as both `tinyjpg` and the short alias `tj`.
 
+## Contents
+
+- [Preview](#preview)
+- [Why TinyJPG](#why-tinyjpg)
+- [Install](#install)
+- [Quick Start](#quick-start)
+- [Commands](#commands)
+- [Configuration](#configuration)
+- [Services](#services)
+- [Release Assets](#release-assets)
+- [Build From Source](#build-from-source)
+
 ## Preview
 
 | Before | After |
@@ -43,93 +55,111 @@ about 84%.
 
 ## Install
 
-Install the latest release on Linux or macOS:
+Linux and macOS:
 
 ```bash
 curl -fsSL https://tj.eorlov.org/install.sh | sh
 ```
 
-Install the latest release on Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
-irm https://pq.eorlov.org/install.ps1 | iex
+irm https://tj.eorlov.org/install.ps1 | iex
 ```
 
-Install with Homebrew on Apple Silicon macOS:
+Homebrew on Apple Silicon macOS:
 
 ```bash
 brew tap OrlovEvgeny/tinyjpg
 brew install tinyjpg
 ```
 
-Build from source with CMake, Ninja, a C++23 compiler, and vcpkg:
+Install a specific version:
 
 ```bash
-cmake -S . -B build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-  -DBUILD_TESTING=ON
-cmake --build build
-ctest --test-dir build --output-on-failure
-cmake --install build --prefix ~/.local
+curl -fsSL https://tj.eorlov.org/install.sh | sh -s -- --version 1.0.1
 ```
 
-Create local packages with CPack:
+```powershell
+irm https://tj.eorlov.org/install.ps1 -OutFile install.ps1
+./install.ps1 -Version 1.0.1
+```
+
+The installers read the release manifest, pick the correct archive for the
+current platform, verify SHA256, and install `tinyjpg` plus the `tj` alias.
+
+## Quick Start
+
+Run a safe dry-run first:
 
 ```bash
-cpack --config build/CPackConfig.cmake
+tj scan ./images --preset web --dry-run --format table
 ```
 
-## Usage
-
-Optimize explicit files:
+Generate optimized variants:
 
 ```bash
-tj run image.jpg image.png --config tinyjpg.toml --format table
+tj scan ./images --preset web --format table
 ```
 
-Scan files and directories:
+Create a config file for repeatable jobs:
 
 ```bash
-tj scan ./images --preset web --dry-run --format json
+tj config print --defaults > tinyjpg.toml
+tj config validate tinyjpg.toml
+tj scan ./images --config tinyjpg.toml
 ```
 
-Watch a directory for new or changed images:
+Watch a directory continuously:
 
 ```bash
 tj watch ./uploads --config tinyjpg.toml
 ```
 
-Inspect built-in responsive presets:
+## Commands
 
-```bash
-tj presets list
-```
+| Command | Purpose | Example |
+| --- | --- | --- |
+| `run` | Optimize explicit files. | `tj run hero.jpg banner.png --preset web` |
+| `scan` | Optimize supported images under files or directories. | `tj scan ./public/images --config tinyjpg.toml` |
+| `watch` | Repeatedly scan paths and process changed images. | `tj watch ./uploads --config tinyjpg.toml` |
+| `presets list` | Show built-in responsive presets. | `tj presets list --format table` |
+| `config print` | Print a default TOML config. | `tj config print --defaults` |
+| `config validate` | Validate a TOML config before automation. | `tj config validate tinyjpg.toml` |
+| `doctor` | Check local runtime basics. | `tj doctor --format table` |
+| `completion` | Print shell completion for bash, zsh, or fish. | `tj completion zsh > _tj` |
 
-Generate shell completion:
+Common options for `run`, `scan`, and `watch`:
 
-```bash
-tj completion zsh > _tj
-```
+| Option | Meaning |
+| --- | --- |
+| `--config, -c` | TOML configuration file. |
+| `--preset` | Replace configured variants with `web`, `ecommerce`, or `avatar`. |
+| `--dry-run` | Plan work without writing files. |
+| `--quiet, -q` | Suppress per-file text output. |
+| `--format` | Output as `text`, `table`, or `json`. |
+
+Output formats are intended for different uses: `text` for humans, `table` for
+inspection, and `json` for CI or other automation.
 
 ## Configuration
 
-Generate a default TOML config:
+Generate and validate a config:
 
 ```bash
 tj config print --defaults > tinyjpg.toml
-```
-
-Validate it before using it in automation:
-
-```bash
 tj config validate tinyjpg.toml
 ```
 
-### Practical config
+TinyJPG starts from built-in defaults and then applies values from your TOML
+file. CLI flags such as `--preset` and `--dry-run` override the loaded config for
+that invocation.
 
-This example watches an upload directory, writes all generated files into a
-separate output directory, and creates three variants for web delivery:
+### Practical Config
+
+This config is suitable for a service-style image pipeline. It watches an input
+directory, writes generated files into a separate output directory, and creates
+three web delivery variants.
 
 ```toml
 [general]
@@ -182,7 +212,7 @@ pattern = "{stem}{suffix}.{ext}"
 on_exist = "version"
 ```
 
-With this config, `/var/lib/tinyjpg/inbox/hero.jpg` can produce:
+For `/var/lib/tinyjpg/inbox/hero.jpg`, this can produce:
 
 ```text
 /var/lib/tinyjpg/output/hero-large.jpg
@@ -190,19 +220,19 @@ With this config, `/var/lib/tinyjpg/inbox/hero.jpg` can produce:
 /var/lib/tinyjpg/output/hero-thumb.jpg
 ```
 
-### Config reference
+### Config Reference
 
-`[general]`
+#### `[general]`
 
 | Setting | Values | Meaning |
 | --- | --- | --- |
-| `workers` | `0` or positive integer | Number of worker threads. `0` uses hardware concurrency. |
+| `workers` | `0` or positive integer | Worker threads. `0` uses hardware concurrency. |
 | `log_level` | `trace`, `debug`, `info`, `warn`, `error` | Runtime verbosity. |
-| `queue_capacity` | positive integer | Maximum pending work items before producers wait. |
-| `stable_wait_ms` | `0` or positive integer | Delay used by watch mode so files finish writing before processing. |
-| `dry_run` | `true`, `false` | Plan work without writing output files. Can also be set with `--dry-run`. |
+| `queue_capacity` | positive integer | Maximum queued work items before producers wait. |
+| `stable_wait_ms` | `0` or positive integer | Watch-mode delay before reading a changed file, so uploads can finish. |
+| `dry_run` | `true`, `false` | Plan work without writing files. Can also be set with `--dry-run`. |
 
-`[watch]`
+#### `[watch]`
 
 | Setting | Values | Meaning |
 | --- | --- | --- |
@@ -212,24 +242,24 @@ With this config, `/var/lib/tinyjpg/inbox/hero.jpg` can produce:
 | `exclude` | glob array | Parsed from TOML; generated TinyJPG variants are skipped automatically. |
 | `prefix` | string array | Parsed from TOML and reserved for path-prefix filtering. |
 
-`[compress]`
+#### `[compress]`
 
 | Setting | Values | Meaning |
 | --- | --- | --- |
 | `mode` | `lossless`, `visually_lossless`, `lossy` | Default fidelity target for variants. |
 | `effort` | `fast`, `balanced`, `max` | Encoder effort/speed preference. |
 | `keep_metadata` | `true`, `false` | Keep image metadata when possible. |
-| `skip_if_not_smaller` | `true`, `false` | Do not replace/write variants that are larger than the source. |
-| `preserve_original` | `true`, `false` | Avoid overwriting the original path; an empty suffix becomes `-optimized`. |
+| `skip_if_not_smaller` | `true`, `false` | Skip outputs that would be larger than the source. |
+| `preserve_original` | `true`, `false` | Avoid overwriting the source path; an empty suffix becomes `-optimized`. |
 
-`[[variant]]`
+#### `[[variant]]`
 
 Each variant describes one output image. At least one variant is required.
 Variant names may contain letters, digits, `_`, and `-`.
 
 | Setting | Values | Meaning |
 | --- | --- | --- |
-| `name` | string | Variant name shown in output and used by `{name}`. |
+| `name` | string | Variant name shown in output and available as `{name}`. |
 | `codec` | `auto`, `jpeg`, `png`, `webp`, `avif`, `jxl` | Output codec. `auto` keeps the source codec. |
 | `mode` | same as `[compress].mode` | Optional per-variant fidelity override. |
 | `quality` | `1` to `100` | Encoder quality. If omitted, TinyJPG uses `82`. |
@@ -238,10 +268,10 @@ Variant names may contain letters, digits, `_`, and `-`.
 | `fit` | `contain`, `cover`, `fill` | Resize behavior when both dimensions are set. |
 | `suffix` | string | Added to output file names, for example `-thumb`. |
 
-Every non-`original` variant must set `max_width`, `max_height`, or both.
-The special variant name `original` is allowed without size constraints.
+Every non-`original` variant must set `max_width`, `max_height`, or both. The
+special variant name `original` is allowed without size constraints.
 
-`[output]`
+#### `[output]`
 
 | Setting | Values | Meaning |
 | --- | --- | --- |
@@ -272,7 +302,7 @@ pattern = "{codec}/{stem}-{name}.{ext}"
 
 ### Presets
 
-You can replace configured variants with a built-in preset at runtime:
+Use presets when you do not need custom variants:
 
 ```bash
 tj scan ./images --preset web
@@ -280,25 +310,23 @@ tj scan ./products --preset ecommerce
 tj scan ./avatars --preset avatar
 ```
 
-Available presets:
-
 | Preset | Variants |
 | --- | --- |
 | `web` | `original`, `large` 1920w, `medium` 1024w, `thumb` 320x320 cover |
 | `ecommerce` | `original`, `hero` 1600w, `listing` 900w, `thumb` 320w |
 | `avatar` | `original`, `full` 512x512 cover, `thumb` 128x128 cover |
 
-## Service Assets
+## Services
 
-Install packages include service helpers for long-running optimization:
+Release archives include service helpers for long-running optimization:
 
 - systemd unit, sysusers, and tmpfiles snippets for Linux.
 - launchd plist template for macOS.
 - PowerShell install and uninstall scripts for Windows services.
 
-### systemd example
+### systemd Example
 
-The generated unit runs:
+The generated Linux unit runs:
 
 ```text
 tinyjpg watch --config /etc/tinyjpg/tinyjpg.toml
@@ -347,6 +375,53 @@ Then reload and restart:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl restart tinyjpg.service
+```
+
+## Release Assets
+
+Tagged releases publish platform archives to Cloudflare R2 and create a GitHub
+Release with changelog and install instructions.
+
+| Platform | Archive |
+| --- | --- |
+| Linux x86_64 | `tinyjpg-{version}-linux-x86_64.tar.gz` |
+| Linux aarch64 | `tinyjpg-{version}-linux-aarch64.tar.gz` |
+| macOS arm64 | `tinyjpg-{version}-macos-arm64.tar.gz` |
+| Windows x86_64 | `tinyjpg-{version}-windows-x86_64.zip` |
+
+The public manifest for installers and future self-update support is:
+
+```text
+https://tinyjpg.eorlov.org/tinyjpg/manifest.json
+```
+
+## Build From Source
+
+Requirements:
+
+- CMake 3.28 or newer.
+- Ninja.
+- A C++23 compiler.
+- vcpkg.
+- `nasm` on Linux for codec dependencies.
+
+Configure, build, test, and install:
+
+```bash
+cmake -S . -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+  -DBUILD_TESTING=ON
+
+cmake --build build
+ctest --test-dir build --output-on-failure
+cmake --install build --prefix ~/.local
+```
+
+Create local CPack archives:
+
+```bash
+cpack --config build/CPackConfig.cmake
 ```
 
 ## License
