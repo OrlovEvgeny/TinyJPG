@@ -1,184 +1,116 @@
 <p align="center"><img src="https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/doc/logo.png" width="360"></p>
-<p align="center">
-  <a href="https://travis-ci.org/OrlovEvgeny/TinyJPG"><img src="https://travis-ci.org/OrlovEvgeny/TinyJPG.svg?branch=master" alt="Build Status"></img></a>
-  <a href="https://codeclimate.com/github/OrlovEvgeny/TinyJPG/maintainability"><img src="https://api.codeclimate.com/v1/badges/89f33892db95130c5b3a/maintainability" alt="Maintainability"></a>
-  <a href="https://goreportcard.com/report/github.com/OrlovEvgeny/TinyJPG?"><img src="https://goreportcard.com/badge/github.com/OrlovEvgeny/TinyJPG?" /></a>
-  <a href="https://gitter.im/TinyJPG/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/TinyJPG/Lobby.svg" /></a>
-</p>
 
-# TinyJPG Filesystem watcher and image compress
+# TinyJPG
 
-JPEG image compress watcher based Filesystem event notification [github.com/rjeczalik/notify](https://github.com/rjeczalik/notify)
+TinyJPG is a C++23 command line image optimizer for JPEG, PNG, WebP, AVIF, and JPEG XL workflows. It can optimize explicit files, scan directories, watch paths for changes, generate responsive variants, and emit text, table, or JSON output for automation.
 
-**Example compress quality 82%**
+## Features
 
-original before size 1.47 MB (1,536,181 bytes)  | compressed after 277.56 KB (284,223 bytes)
-------------- | -------------
-![screenshot](https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/doc/meg-before.jpg "compress example")  | ![screenshot](https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/doc/meg-after.jpg "compress example")
+- In-process image decoding and encoding with libjpeg-turbo, libpng, libwebp, libavif, and libjxl.
+- `run`, `scan`, and `watch` commands for one-shot and continuous optimization.
+- Built-in presets for common responsive image variants.
+- TOML configuration with validation and default config generation.
+- Dry-run mode, structured output, runtime diagnostics, and shell completions.
 
-# Install binary
+## Build
 
-**Installation dependency**
-```bash
-~ $ apt install libmagickwand-dev imagemagick
-```
-
-**Install TinyJPG for v0.0.9:**
-````bash
-curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh | sh -s - v0.0.9
-````
-
-If you prefer **Ansible**:
-````bash
-tasks:
-- name: TinyJPG installed
-  sudo: yes
-  shell: "curl -L https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/tinyjpg_install.sh | sh -s - v0.0.9"
-````
-
-**Edit config File**
-````bash
-~ $ vim /etc/tinyjpg/config.yml
-````
-
-````bash
-
-##
-# TinyJPG v0.0.9
-#
-# worker - maximum amount workers, Default value - 5
-# verbose - verbose log, Default value - true
-# worker_buffer - maximum buffer queue workers, Default value - 100
-# event_buffer - maximum buffer an event reported by the underlying filesystem notification subsystem, Default value - 100
-##
-general:
-  worker: 5
-  worker_buffer: 100
-  event_buffer: 300
-  verbose: false
-  error_log: '/var/log/tinyjpg/error.log'
-  info_log: '/var/log/tinyjpg/info.log'
-
-###
-# Image compress settings
-#
-# paths - directories you need to track
-# prefix - prefix of files to be processed, Default value all files - *
-# example use
-#
-#   prefix:
-#      - 'orig'
-#      - 'medium'
-#      - 'full'
-#
-# quality - This param image quality level in percentage.
-# If the original image quality is lower than the quality of the parameter - quality
-# the image will not be processed
-###
-compress:
-  paths:
-    - '/home/www/example.com/uploads'
-    - '/home/www/site.org/uploads'
-  prefix:
-    - '*'
-  quality: 82
-
-````
-
-
-
-**check that everything is fine**
-````bash
-~ $ tinyjpg -help
-
-    Usage of build/tinyjpg:
-      -config string
-            config file path
-      -event_buffer int
-            buffer an event reported (default 300)
-      -path string
-            uploads folder path, default - /home/www (default "/home/www")
-      -quality int
-            image quality level in percentage (default 82)
-      -worker int
-            maximum amount workers (default 5)
-      -worker_buffer int
-            maximum buffer queue workers (default 500)
-
-````
-
-## Use
-**I recommend using [supervisor](http://blog.questionable.services/article/running-go-applications-in-the-background/)**
-
-*example config*
-```bash
-~ $ vim /etc/supervisor/conf.d/tinyjpg.conf
-```
-*write*
-```bash
-[program:tinyjpg]
-command=/usr/local/bin/tinyjpg -config=/etc/tinyjpg/config.yml
-environment=ENVIRONMENT=production
-autorestart=true
-user=root
-redirect_stderr=true
-stderr_logfile=/var/log/tinyjpg/log.err.log
-stdout_logfile=/var/log/tinyjpg/log.out.log
-```
+Install CMake, Ninja, a C++23 compiler, and vcpkg. Then configure with the vcpkg toolchain:
 
 ```bash
-~ $ mkdir -p /var/log/tinyjpg
+cmake -S . -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+  -DBUILD_TESTING=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
 ```
+
+The binary is written to `build/tinyjpg`.
+
+## Configuration
+
+Generate a default TOML config:
 
 ```bash
-~ $ service supervisor restart
+tinyjpg config print --defaults > tinyjpg.toml
 ```
 
-or use **Tmux**
+Validate it before using it in automation:
 
 ```bash
-~ $ tinyjpg -config=/etc/tinyjpg/config.yml
+tinyjpg config validate tinyjpg.toml
 ```
 
-# deprecated
-or use **CLI** mode
-````bash
-# deprecated
-~ $ tinyjpg -path=/home/www/example.com/images -worker=10
-````
-**Args:**
-* *path* - required. Path to watch new files, default /home/www
-* *worker* - optional. Amount start workers process, default 5
+Example config:
 
+```toml
+[general]
+workers = 0
+log_level = "info"
+queue_capacity = 512
+stable_wait_ms = 400
+dry_run = false
 
-# Build Source
+[watch]
+paths = ["./uploads"]
+recursive = true
+include = ["*.jpg", "*.jpeg", "*.png", "*.webp"]
+exclude = ["**/.cache/**", "*.tmp"]
+prefix = []
 
-**For compilation you need to install [Golang1.8](https://medium.com/@patdhlk/how-to-install-go-1-8-on-ubuntu-16-04-710967aa53c9)**
+[compress]
+mode = "lossless"
+effort = "max"
+keep_metadata = false
+skip_if_not_smaller = true
+preserve_original = true
+
+[[variant]]
+name = "medium"
+codec = "auto"
+max_width = 1024
+quality = 82
+suffix = "-medium"
+
+[output]
+pattern = "{dir}/{stem}{suffix}.{ext}"
+directory = ""
+on_exist = "skip"
+```
+
+## Usage
+
+Optimize explicit files:
 
 ```bash
-~ $ apt install libmagickwand-dev imagemagick
+tinyjpg run image.jpg image.png --config tinyjpg.toml --format table
 ```
+
+Scan files and directories:
 
 ```bash
-~ $ git clone https://github.com/OrlovEvgeny/TinyJPG && cd TinyJPG
+tinyjpg scan ./images --preset web --dry-run --format json
 ```
+
+Watch a directory:
 
 ```bash
-~ $ go get -u github.com/rjeczalik/notify
+tinyjpg watch ./uploads --config tinyjpg.toml
 ```
+
+Inspect available presets and runtime support:
 
 ```bash
-~ $ mkdir build && go build -o ./build/tinyjpg *.go
+tinyjpg presets list
+tinyjpg doctor --format table
 ```
+
+Generate shell completion:
 
 ```bash
-~ $ mv /build/tinyjpg  /usr/local/bin/tinyjpg
+tinyjpg completion zsh > _tinyjpg
 ```
-**permission for execution**
-````bash
-~ $ chmod +x /usr/local/bin/tinyjpg
-````
 
-# License:
+## License
 
 [MIT](LICENSE)

@@ -21,7 +21,6 @@ find_package(WebP CONFIG QUIET)
 find_package(PkgConfig QUIET)
 find_package(spdlog CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
-find_package(yaml-cpp CONFIG REQUIRED)
 
 if(NOT WebP_FOUND AND PkgConfig_FOUND)
   pkg_check_modules(WEBP QUIET IMPORTED_TARGET libwebp)
@@ -62,7 +61,7 @@ target_compile_features(tinyjpg_core PUBLIC cxx_std_23)
 target_link_libraries(
   tinyjpg_core
   PUBLIC CLI11::CLI11
-  PRIVATE JPEG::JPEG PNG::PNG spdlog::spdlog tomlplusplus::tomlplusplus yaml-cpp::yaml-cpp)
+  PRIVATE JPEG::JPEG PNG::PNG spdlog::spdlog tomlplusplus::tomlplusplus)
 
 if(WebP_FOUND)
   target_link_libraries(tinyjpg_core PRIVATE WebP::webp)

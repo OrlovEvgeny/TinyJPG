@@ -46,24 +46,6 @@ TEST_CASE("toml validation rejects bad variants") {
   CHECK(loaded.error().message.find("max_width or max_height") != std::string::npos);
 }
 
-TEST_CASE("legacy yaml migrates to TOML") {
-  const auto path = write_temp_file("tinyjpg-legacy.yml",
-                                    "general:\n"
-                                    "  worker: 3\n"
-                                    "  worker_buffer: 42\n"
-                                    "compress:\n"
-                                    "  paths:\n"
-                                    "    - /tmp/uploads\n"
-                                    "  prefix:\n"
-                                    "    - orig\n"
-                                    "  quality: 76\n");
-
-  const auto migrated = tinyjpg::migrate_legacy_yaml(path);
-  REQUIRE(migrated.has_value());
-  CHECK(migrated->find("workers = 3") != std::string::npos);
-  CHECK(migrated->find("quality = 76") != std::string::npos);
-}
-
 TEST_CASE("config CLI commands return stable exit codes") {
   const auto rendered = tinyjpg::render_default_config().value();
   const auto path = write_temp_file("tinyjpg-cli-config.toml", rendered);
@@ -101,18 +83,6 @@ int main() {
   const auto path = write_temp_file("tinyjpg-default-test.toml", *rendered);
   const auto loaded = tinyjpg::load_toml_config(path);
   if (!loaded.has_value() || !tinyjpg::validate_config(*loaded).has_value()) {
-    return 1;
-  }
-
-  const auto legacy = write_temp_file("tinyjpg-legacy.yml",
-                                      "general:\n"
-                                      "  worker: 3\n"
-                                      "compress:\n"
-                                      "  paths:\n"
-                                      "    - /tmp/uploads\n"
-                                      "  quality: 76\n");
-  const auto migrated = tinyjpg::migrate_legacy_yaml(legacy);
-  if (!migrated.has_value() || migrated->find("quality = 76") == std::string::npos) {
     return 1;
   }
 

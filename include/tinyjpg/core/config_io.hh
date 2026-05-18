@@ -11,6 +11,5 @@ namespace tinyjpg {
 [[nodiscard]] Result<AppConfig> load_toml_config(const std::filesystem::path& path);
 [[nodiscard]] Result<void> validate_config_file(const std::filesystem::path& path);
 [[nodiscard]] Result<std::string> render_default_config();
-[[nodiscard]] Result<std::string> migrate_legacy_yaml(const std::filesystem::path& path);
 
 }  // namespace tinyjpg

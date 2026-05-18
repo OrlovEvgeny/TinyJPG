@@ -1,7 +1,5 @@
 #include "tinyjpg/core/config_io.hh"
 
-#include <yaml-cpp/yaml.h>
-
 #include <cstdint>
 #include <filesystem>
 #include <sstream>
@@ -140,19 +138,6 @@ void append_string_array(std::ostringstream& out, std::string_view key,
       out << ", ";
     }
     out << '"' << values[index] << '"';
-  }
-  out << "]\n";
-}
-
-void append_legacy_paths(std::ostringstream& out, const YAML::Node& paths) {
-  out << "paths = [";
-  if (paths && paths.IsSequence()) {
-    for (std::size_t index = 0; index < paths.size(); ++index) {
-      if (index != 0) {
-        out << ", ";
-      }
-      out << '"' << paths[index].as<std::string>() << '"';
-    }
   }
   out << "]\n";
 }
@@ -351,64 +336,6 @@ Result<std::string> render_default_config() {
   out << "pattern = \"" << config->output.pattern << "\"\n";
   out << "directory = \"\"\n";
   out << "on_exist = \"" << to_string(config->output.on_exist) << "\"\n";
-
-  return out.str();
-}
-
-Result<std::string> migrate_legacy_yaml(const std::filesystem::path& path) {
-  auto yaml = YAML::Node{};
-  try {
-    yaml = YAML::LoadFile(path.string());
-  } catch (const YAML::Exception& error) {
-    return unexpected(Error::filesystem(path, error.what()));
-  }
-
-  const auto general = yaml["general"];
-  const auto compress = yaml["compress"];
-  const auto quality = compress["quality"] ? compress["quality"].as<int>() : 82;
-
-  auto out = std::ostringstream{};
-  out << "[general]\n";
-  out << "workers = " << (general["worker"] ? general["worker"].as<int>() : 0) << "\n";
-  out << "log_level = \"info\"\n";
-  out << "queue_capacity = "
-      << (general["worker_buffer"] ? general["worker_buffer"].as<int>() : 512) << "\n";
-  out << "stable_wait_ms = 400\n";
-  out << "dry_run = false\n\n";
-
-  out << "[watch]\n";
-  append_legacy_paths(out, compress["paths"]);
-  out << "recursive = true\n";
-  out << "include = [\"*.jpg\", \"*.jpeg\", \"*.png\"]\n";
-  out << "exclude = [\"**/.cache/**\", \"*.tmp\"]\n";
-  out << "prefix = [";
-  if (compress["prefix"] && compress["prefix"].IsSequence()) {
-    for (std::size_t index = 0; index < compress["prefix"].size(); ++index) {
-      if (index != 0) {
-        out << ", ";
-      }
-      out << '"' << compress["prefix"][index].as<std::string>() << '"';
-    }
-  }
-  out << "]\n\n";
-
-  out << "[compress]\n";
-  out << "mode = \"lossy\"\n";
-  out << "effort = \"max\"\n";
-  out << "keep_metadata = false\n";
-  out << "skip_if_not_smaller = true\n";
-  out << "preserve_original = true\n\n";
-
-  out << "[[variant]]\n";
-  out << "name = \"original\"\n";
-  out << "codec = \"auto\"\n";
-  out << "quality = " << quality << "\n";
-  out << "suffix = \"\"\n\n";
-
-  out << "[output]\n";
-  out << "pattern = \"{dir}/{stem}{suffix}.{ext}\"\n";
-  out << "directory = \"\"\n";
-  out << "on_exist = \"overwrite\"\n";
 
   return out.str();
 }

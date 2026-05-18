@@ -17,7 +17,6 @@
     "libpng",
     "libwebp",
     "spdlog",
-    "tomlplusplus",
-    "yaml-cpp"
+    "tomlplusplus"
   ]
 }

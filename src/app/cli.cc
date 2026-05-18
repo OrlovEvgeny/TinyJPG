@@ -112,14 +112,6 @@ void validate_config_command(const std::string& config_path) {
   std::cout << "config ok\n";
 }
 
-void migrate_config_command(const std::string& legacy_path) {
-  const auto rendered = migrate_legacy_yaml(legacy_path);
-  if (!rendered) {
-    throw_usage(rendered.error());
-  }
-  std::cout << *rendered;
-}
-
 [[nodiscard]] Result<AppConfig> load_run_config(const std::string& config_path) {
   if (config_path.empty()) {
     return default_config();
@@ -418,8 +410,7 @@ void doctor_command(const std::string& format_name) {
 }
 
 void completion_command(const std::string& shell) {
-  static constexpr auto kCommands =
-      "config migrate-config run scan watch presets doctor completion";
+  static constexpr auto kCommands = "config run scan watch presets doctor completion";
   if (shell == "bash") {
     std::cout << "_tinyjpg_complete() {\n"
               << "  COMPREPLY=( $(compgen -W \"" << kCommands
@@ -459,7 +450,6 @@ ExitCode run(std::span<char const* const> args) {
 
   auto printed_defaults = false;
   auto config_path = std::string{};
-  auto legacy_path = std::string{};
   auto run_input_paths = std::vector<std::string>{};
   auto run_options = CommandOptions{};
   auto scan_input_paths = std::vector<std::string>{};
@@ -478,10 +468,6 @@ ExitCode run(std::span<char const* const> args) {
   auto* validate = config->add_subcommand("validate", "Validate a TOML configuration file");
   validate->add_option("file", config_path, "TOML configuration file")->required();
   validate->callback([&config_path] { validate_config_command(config_path); });
-
-  auto* migrate = app.add_subcommand("migrate-config", "Convert a legacy YAML configuration");
-  migrate->add_option("file", legacy_path, "Legacy YAML configuration file")->required();
-  migrate->callback([&legacy_path] { migrate_config_command(legacy_path); });
 
   auto* run_command = app.add_subcommand("run", "Optimize image files");
   run_command->add_option("file", run_input_paths, "Image files to optimize")->required();
