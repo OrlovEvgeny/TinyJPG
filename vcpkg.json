@@ -9,6 +9,8 @@
       "name": "doctest",
       "host": true
     },
+    "libjpeg-turbo",
+    "libpng",
     "spdlog",
     "tomlplusplus",
     "yaml-cpp"

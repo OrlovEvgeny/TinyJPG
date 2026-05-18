@@ -45,6 +45,22 @@ struct Error {
         .path = std::move(path),
     };
   }
+
+  [[nodiscard]] static Error unsupported(std::string message) {
+    return Error{
+        .code = ErrorCode::unsupported,
+        .message = std::move(message),
+        .path = std::nullopt,
+    };
+  }
+
+  [[nodiscard]] static Error internal(std::string message) {
+    return Error{
+        .code = ErrorCode::internal,
+        .message = std::move(message),
+        .path = std::nullopt,
+    };
+  }
 };
 
 struct Unexpected {
