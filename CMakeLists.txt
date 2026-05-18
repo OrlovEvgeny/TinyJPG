@@ -60,7 +60,7 @@ target_compile_definitions(
 
 function(tinyjpg_apply_warnings target)
   if(MSVC)
-    target_compile_options(${target} PRIVATE /W4 /utf-8)
+    target_compile_options(${target} PRIVATE /W4 /utf-8 /wd4324 /wd4611)
     if(TINYJPG_WARNINGS_AS_ERRORS)
       target_compile_options(${target} PRIVATE /WX)
     endif()

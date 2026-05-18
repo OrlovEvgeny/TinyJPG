@@ -31,7 +31,15 @@ struct FileCloser {
 using FilePtr = std::unique_ptr<std::FILE, FileCloser>;
 
 [[nodiscard]] FilePtr open_file(const std::filesystem::path& path, const char* mode) {
+#if defined(_WIN32)
+  auto* file = static_cast<std::FILE*>(nullptr);
+  if (fopen_s(&file, path.string().c_str(), mode) != 0) {
+    return FilePtr{};
+  }
+  return FilePtr{file};
+#else
   return FilePtr{std::fopen(path.string().c_str(), mode)};
+#endif
 }
 
 [[nodiscard]] bool has_extension(const std::filesystem::path& path, std::string_view extension) {
