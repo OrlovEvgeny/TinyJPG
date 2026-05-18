@@ -24,10 +24,10 @@ The executable is available as both `tinyjpg` and the short alias `tj`.
 | Before | After |
 | --- | --- |
 | ![Original portrait before compression](doc/meg-before.jpg) | ![Portrait after TinyJPG compression](doc/meg-after.jpg) |
-| 1.5 MB JPEG | 243 KB JPEG |
+| 1.5 MB JPEG | 798 KB JPEG |
 
 This sample keeps the original 2236 x 1792 dimensions and reduces the file by
-about 84%.
+about 48% with a near-lossless JPEG profile.
 
 ## Why TinyJPG
 

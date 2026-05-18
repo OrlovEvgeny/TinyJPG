@@ -560,7 +560,8 @@ using JxlEncoderPtr = std::unique_ptr<JxlEncoder, JxlEncoderDeleter>;
   return EncodedImage{.codec = Codec::png, .bytes = std::move(bytes)};
 }
 
-[[nodiscard]] Result<EncodedImage> encode_jpeg(const Image& image, Quality quality) {
+[[nodiscard]] Result<EncodedImage> encode_jpeg(const Image& image, Quality quality,
+                                               FidelityMode mode) {
   auto info = jpeg_compress_struct{};
   auto error = JpegErrorManager{};
   info.err = jpeg_std_error(&error.base);
@@ -584,7 +585,15 @@ using JxlEncoderPtr = std::unique_ptr<JxlEncoder, JxlEncoderDeleter>;
   info.in_color_space = JCS_RGB;
 
   jpeg_set_defaults(&info);
-  jpeg_set_quality(&info, quality.percent(), TRUE);
+  const auto jpeg_quality =
+      mode == FidelityMode::lossless ? std::max(quality.percent(), 95) : quality.percent();
+  jpeg_set_quality(&info, jpeg_quality, TRUE);
+  if (mode == FidelityMode::lossless) {
+    for (auto component = 0; component < info.num_components; ++component) {
+      info.comp_info[component].h_samp_factor = 1;
+      info.comp_info[component].v_samp_factor = 1;
+    }
+  }
   info.optimize_coding = TRUE;
   jpeg_simple_progression(&info);
   jpeg_start_compress(&info, TRUE);
@@ -846,7 +855,7 @@ Result<EncodedImage> encode_image(const Image& image, Codec codec, Quality quali
     return encode_png(image, effort);
   }
   if (codec == Codec::jpeg) {
-    return encode_jpeg(image, quality);
+    return encode_jpeg(image, quality, mode);
   }
 #if defined(TINYJPG_HAS_WEBP)
   if (codec == Codec::webp) {
