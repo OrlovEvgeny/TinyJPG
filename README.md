@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/OrlovEvgeny/TinyJPG/master/doc/logo.png" width="340" alt="TinyJPG">
+  <img src="doc/tj_logo.png" width="260" alt="TinyJPG logo">
 </p>
 
 <p align="center">
