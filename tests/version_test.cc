@@ -1,8 +1,9 @@
+#include "tinyjpg/core/version.hh"
+
 #include <array>
 #include <string_view>
 
 #include "tinyjpg/app/cli.hh"
-#include "tinyjpg/core/version.hh"
 
 #if defined(TINYJPG_HAS_DOCTEST)
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
