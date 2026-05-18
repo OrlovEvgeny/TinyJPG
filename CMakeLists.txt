@@ -22,7 +22,7 @@ add_library(tinyjpg_core)
 add_library(tinyjpg::tinyjpg ALIAS tinyjpg_core)
 
 target_sources(tinyjpg_core PRIVATE src/app/cli.cc src/core/config.cc src/core/config_io.cc
-                                    src/core/types.cc src/core/version.cc)
+                                    src/core/log.cc src/core/types.cc src/core/version.cc)
 
 target_include_directories(
   tinyjpg_core PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -92,6 +92,7 @@ if(BUILD_TESTING)
   tinyjpg_add_test(tinyjpg_core_types_test tests/core_types_test.cc)
   tinyjpg_add_test(tinyjpg_config_test tests/config_test.cc)
   tinyjpg_add_test(tinyjpg_config_io_test tests/config_io_test.cc)
+  tinyjpg_add_test(tinyjpg_log_test tests/log_test.cc)
   tinyjpg_add_test(tinyjpg_version_test tests/version_test.cc)
   add_test(NAME tinyjpg.version.cli COMMAND tinyjpg --version)
 endif()
