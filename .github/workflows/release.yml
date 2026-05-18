@@ -9,10 +9,15 @@ permissions:
   contents: write
 
 # Required secrets:
-# - R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT
+# - R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+# - R2_ACCOUNT_ID and R2_BUCKET_NAME, or R2_ENDPOINT as a legacy override
 # - HOMEBREW_TAP_TOKEN with write access to OrlovEvgeny/homebrew-tinyjpg
 env:
-  R2_BUCKET: jt-releases
+  AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: auto
+  R2_BUCKET: ${{ secrets.R2_BUCKET_NAME || 'jt-releases' }}
+  R2_ENDPOINT: ${{ secrets.R2_ENDPOINT || format('https://{0}.r2.cloudflarestorage.com', secrets.R2_ACCOUNT_ID) }}
   PUBLIC_ARTIFACT_BASE_URL: https://tinyjpg.eorlov.org/tinyjpg
   VCPKG_GIT_COMMIT: 56bb2411609227288b70117ead2c47585ba07713
 
@@ -84,20 +89,13 @@ jobs:
           cp README.md LICENSE staging/
           tar czf "$ARCHIVE_NAME" -C staging .
 
-      - name: Configure AWS CLI for R2
-        run: |
-          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
-          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
-          aws configure set region auto
-          aws configure set output json
-
       - name: Upload archive to R2
         run: |
           aws s3api put-object \
             --bucket "${R2_BUCKET}" \
             --key "tinyjpg/${VERSION}/${ARCHIVE_NAME}" \
             --body "${ARCHIVE_NAME}" \
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+            --endpoint-url "${R2_ENDPOINT}"
 
   build-linux-aarch64:
     name: Linux aarch64
@@ -166,20 +164,13 @@ jobs:
           cp README.md LICENSE staging/
           tar czf "$ARCHIVE_NAME" -C staging .
 
-      - name: Configure AWS CLI for R2
-        run: |
-          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
-          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
-          aws configure set region auto
-          aws configure set output json
-
       - name: Upload archive to R2
         run: |
           aws s3api put-object \
             --bucket "${R2_BUCKET}" \
             --key "tinyjpg/${VERSION}/${ARCHIVE_NAME}" \
             --body "${ARCHIVE_NAME}" \
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+            --endpoint-url "${R2_ENDPOINT}"
 
   build-macos-arm64:
     name: macOS arm64
@@ -236,20 +227,13 @@ jobs:
           cp README.md LICENSE staging/
           tar czf "$ARCHIVE_NAME" -C staging .
 
-      - name: Configure AWS CLI for R2
-        run: |
-          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
-          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
-          aws configure set region auto
-          aws configure set output json
-
       - name: Upload archive to R2
         run: |
           aws s3api put-object \
             --bucket "${R2_BUCKET}" \
             --key "tinyjpg/${VERSION}/${ARCHIVE_NAME}" \
             --body "${ARCHIVE_NAME}" \
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+            --endpoint-url "${R2_ENDPOINT}"
 
   build-windows-x86_64:
     name: Windows x86_64
@@ -327,14 +311,6 @@ jobs:
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
           aws --version
 
-      - name: Configure AWS CLI for R2
-        shell: pwsh
-        run: |
-          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
-          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
-          aws configure set region auto
-          aws configure set output json
-
       - name: Upload archive to R2
         shell: pwsh
         run: |
@@ -342,7 +318,7 @@ jobs:
             --bucket $env:R2_BUCKET `
             --key "tinyjpg/$env:VERSION/$env:ARCHIVE_NAME" `
             --body $env:ARCHIVE_NAME `
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+            --endpoint-url $env:R2_ENDPOINT
 
   manifest:
     name: Manifest and install scripts
@@ -378,17 +354,10 @@ jobs:
           sudo ./aws/install --update
           aws --version
 
-      - name: Configure AWS CLI for R2
-        run: |
-          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
-          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
-          aws configure set region auto
-          aws configure set output json
-
       - name: Download existing manifest and archives
         run: |
           aws s3 cp "s3://${R2_BUCKET}/tinyjpg/manifest.json" existing-manifest.json \
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}" || true
+            --endpoint-url "${R2_ENDPOINT}" || true
 
           for archive in \
             "tinyjpg-${VERSION}-linux-x86_64.tar.gz" \
@@ -397,7 +366,7 @@ jobs:
             "tinyjpg-${VERSION}-windows-x86_64.zip"
           do
             aws s3 cp "s3://${R2_BUCKET}/tinyjpg/${VERSION}/${archive}" "$archive" \
-              --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+              --endpoint-url "${R2_ENDPOINT}"
           done
 
       - name: Compute SHA256 hashes
@@ -480,31 +449,31 @@ jobs:
             --bucket "${R2_BUCKET}" \
             --key "tinyjpg/manifest.json" \
             --body manifest.json \
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --endpoint-url "${R2_ENDPOINT}" \
             --content-type "application/json"
           aws s3api put-object \
             --bucket "${R2_BUCKET}" \
             --key "tinyjpg/${VERSION}/manifest.json" \
             --body manifest.json \
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --endpoint-url "${R2_ENDPOINT}" \
             --content-type "application/json"
           aws s3api put-object \
             --bucket "${R2_BUCKET}" \
             --key "tinyjpg/${VERSION}/SHA256SUMS" \
             --body SHA256SUMS \
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --endpoint-url "${R2_ENDPOINT}" \
             --content-type "text/plain"
           aws s3api put-object \
             --bucket "${R2_BUCKET}" \
             --key "install.sh" \
             --body packaging/install/install.sh \
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --endpoint-url "${R2_ENDPOINT}" \
             --content-type "text/x-shellscript"
           aws s3api put-object \
             --bucket "${R2_BUCKET}" \
             --key "install.ps1" \
             --body packaging/install/install.ps1 \
-            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --endpoint-url "${R2_ENDPOINT}" \
             --content-type "text/plain"
 
   homebrew-tap:
