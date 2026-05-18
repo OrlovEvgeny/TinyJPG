@@ -1,0 +1,619 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  R2_BUCKET: jt-releases
+  PUBLIC_ARTIFACT_BASE_URL: https://tinyjpg.eorlov.org/tinyjpg
+  VCPKG_GIT_COMMIT: 56bb2411609227288b70117ead2c47585ba07713
+
+jobs:
+  build-linux-x86_64:
+    name: Linux x86_64
+    runs-on: ubuntu-latest
+    env:
+      PLATFORM: linux-x86_64
+      ARCHIVE_SUFFIX: linux-x86_64.tar.gz
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Linux codec tools
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ env.VCPKG_GIT_COMMIT }}
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -G Ninja
+          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_STANDARD=23
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DBUILD_TESTING=OFF
+          -DTINYJPG_ENABLE_IPO=ON
+          -DTINYJPG_WARNINGS_AS_ERRORS=OFF
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Package
+        run: |
+          mkdir -p staging
+          cp build/tinyjpg staging/
+          cp build/tj staging/
+          cp build/packaging/systemd/tinyjpg.service staging/
+          cp packaging/systemd/tinyjpg.sysusers staging/
+          cp packaging/systemd/tinyjpg.tmpfiles staging/
+          cp README.md LICENSE staging/
+          tar czf "$ARCHIVE_NAME" -C staging .
+
+      - name: Install AWS CLI
+        uses: unfor19/install-aws-cli-action@v1
+
+      - name: Configure AWS CLI for R2
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
+          aws configure set region auto
+          aws configure set output json
+
+      - name: Upload archive to R2
+        run: |
+          aws s3 cp "$ARCHIVE_NAME" "s3://${R2_BUCKET}/tinyjpg/${VERSION}/" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+
+  build-linux-aarch64:
+    name: Linux aarch64
+    runs-on: ubuntu-24.04-arm
+    env:
+      PLATFORM: linux-aarch64
+      ARCHIVE_SUFFIX: linux-aarch64.tar.gz
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Linux codec tools
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ env.VCPKG_GIT_COMMIT }}
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -G Ninja
+          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_STANDARD=23
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DBUILD_TESTING=OFF
+          -DTINYJPG_ENABLE_IPO=ON
+          -DTINYJPG_WARNINGS_AS_ERRORS=OFF
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Package
+        run: |
+          mkdir -p staging
+          cp build/tinyjpg staging/
+          cp build/tj staging/
+          cp build/packaging/systemd/tinyjpg.service staging/
+          cp packaging/systemd/tinyjpg.sysusers staging/
+          cp packaging/systemd/tinyjpg.tmpfiles staging/
+          cp README.md LICENSE staging/
+          tar czf "$ARCHIVE_NAME" -C staging .
+
+      - name: Install AWS CLI
+        uses: unfor19/install-aws-cli-action@v1
+
+      - name: Configure AWS CLI for R2
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
+          aws configure set region auto
+          aws configure set output json
+
+      - name: Upload archive to R2
+        run: |
+          aws s3 cp "$ARCHIVE_NAME" "s3://${R2_BUCKET}/tinyjpg/${VERSION}/" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+
+  build-macos-arm64:
+    name: macOS arm64
+    runs-on: macos-latest
+    env:
+      PLATFORM: macos-arm64
+      ARCHIVE_SUFFIX: macos-arm64.tar.gz
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ env.VCPKG_GIT_COMMIT }}
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -G Ninja
+          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_STANDARD=23
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DCMAKE_OSX_ARCHITECTURES=arm64
+          -DBUILD_TESTING=OFF
+          -DTINYJPG_ENABLE_IPO=ON
+          -DTINYJPG_WARNINGS_AS_ERRORS=OFF
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Package
+        run: |
+          mkdir -p staging
+          cp build/tinyjpg staging/
+          cp build/tj staging/
+          cp build/packaging/launchd/org.tinyjpg.plist staging/
+          cp build/packaging/homebrew/tinyjpg.rb staging/
+          cp README.md LICENSE staging/
+          tar czf "$ARCHIVE_NAME" -C staging .
+
+      - name: Install AWS CLI
+        uses: unfor19/install-aws-cli-action@v1
+
+      - name: Configure AWS CLI for R2
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
+          aws configure set region auto
+          aws configure set output json
+
+      - name: Upload archive to R2
+        run: |
+          aws s3 cp "$ARCHIVE_NAME" "s3://${R2_BUCKET}/tinyjpg/${VERSION}/" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+
+  build-windows-x86_64:
+    name: Windows x86_64
+    runs-on: windows-latest
+    env:
+      PLATFORM: windows-x86_64
+      ARCHIVE_SUFFIX: windows-x86_64.zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "ARCHIVE_NAME=tinyjpg-$version-$env:ARCHIVE_SUFFIX" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ env.VCPKG_GIT_COMMIT }}
+
+      - name: Configure
+        shell: pwsh
+        run: >
+          cmake -S . -B build
+          -G Ninja
+          "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_STANDARD=23
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DBUILD_TESTING=OFF
+          -DTINYJPG_ENABLE_IPO=ON
+          -DTINYJPG_WARNINGS_AS_ERRORS=OFF
+
+      - name: Build
+        shell: pwsh
+        run: cmake --build build --config Release
+
+      - name: Test
+        shell: pwsh
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path staging -Force | Out-Null
+          $binDir = "build"
+          if (Test-Path "build\Release\tinyjpg.exe") {
+            $binDir = "build\Release"
+          }
+          Copy-Item "$binDir\tinyjpg.exe" "staging\tinyjpg.exe"
+          Copy-Item "$binDir\tj.exe" "staging\tj.exe"
+          Copy-Item "build\packaging\scoop\tinyjpg.json" "staging\tinyjpg.json"
+          Copy-Item "packaging\windows\install-service.ps1" "staging\install-service.ps1"
+          Copy-Item "packaging\windows\uninstall-service.ps1" "staging\uninstall-service.ps1"
+          Copy-Item "README.md" "staging\README.md"
+          Copy-Item "LICENSE" "staging\LICENSE"
+          Compress-Archive -Path "staging\*" -DestinationPath $env:ARCHIVE_NAME -Force
+
+      - name: Install AWS CLI
+        shell: pwsh
+        run: |
+          choco install awscli -y --no-progress
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+          aws --version
+
+      - name: Configure AWS CLI for R2
+        shell: pwsh
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
+          aws configure set region auto
+          aws configure set output json
+
+      - name: Upload archive to R2
+        shell: pwsh
+        run: |
+          aws s3 cp $env:ARCHIVE_NAME "s3://$env:R2_BUCKET/tinyjpg/$env:VERSION/" `
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+
+  manifest:
+    name: Manifest and install scripts
+    runs-on: ubuntu-latest
+    needs:
+      - build-linux-x86_64
+      - build-linux-aarch64
+      - build-macos-arm64
+      - build-windows-x86_64
+    outputs:
+      linux_x86_64_sha256: ${{ steps.hashes.outputs.linux_x86_64_sha256 }}
+      linux_aarch64_sha256: ${{ steps.hashes.outputs.linux_aarch64_sha256 }}
+      macos_arm64_sha256: ${{ steps.hashes.outputs.macos_arm64_sha256 }}
+      windows_x86_64_sha256: ${{ steps.hashes.outputs.windows_x86_64_sha256 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "RELEASE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
+
+      - name: Install AWS CLI
+        uses: unfor19/install-aws-cli-action@v1
+
+      - name: Configure AWS CLI for R2
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
+          aws configure set region auto
+          aws configure set output json
+
+      - name: Download existing manifest and archives
+        run: |
+          aws s3 cp "s3://${R2_BUCKET}/tinyjpg/manifest.json" existing-manifest.json \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}" || true
+
+          for archive in \
+            "tinyjpg-${VERSION}-linux-x86_64.tar.gz" \
+            "tinyjpg-${VERSION}-linux-aarch64.tar.gz" \
+            "tinyjpg-${VERSION}-macos-arm64.tar.gz" \
+            "tinyjpg-${VERSION}-windows-x86_64.zip"
+          do
+            aws s3 cp "s3://${R2_BUCKET}/tinyjpg/${VERSION}/${archive}" "$archive" \
+              --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+          done
+
+      - name: Compute SHA256 hashes
+        id: hashes
+        run: |
+          linux_x86_64_sha256=$(sha256sum "tinyjpg-${VERSION}-linux-x86_64.tar.gz" | cut -d ' ' -f1)
+          linux_aarch64_sha256=$(sha256sum "tinyjpg-${VERSION}-linux-aarch64.tar.gz" | cut -d ' ' -f1)
+          macos_arm64_sha256=$(sha256sum "tinyjpg-${VERSION}-macos-arm64.tar.gz" | cut -d ' ' -f1)
+          windows_x86_64_sha256=$(sha256sum "tinyjpg-${VERSION}-windows-x86_64.zip" | cut -d ' ' -f1)
+
+          {
+            echo "linux_x86_64_sha256=$linux_x86_64_sha256"
+            echo "linux_aarch64_sha256=$linux_aarch64_sha256"
+            echo "macos_arm64_sha256=$macos_arm64_sha256"
+            echo "windows_x86_64_sha256=$windows_x86_64_sha256"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "$linux_x86_64_sha256  tinyjpg-${VERSION}-linux-x86_64.tar.gz"
+            echo "$linux_aarch64_sha256  tinyjpg-${VERSION}-linux-aarch64.tar.gz"
+            echo "$macos_arm64_sha256  tinyjpg-${VERSION}-macos-arm64.tar.gz"
+            echo "$windows_x86_64_sha256  tinyjpg-${VERSION}-windows-x86_64.zip"
+          } > SHA256SUMS
+
+      - name: Generate manifest.json
+        env:
+          LINUX_X86_64_SHA256: ${{ steps.hashes.outputs.linux_x86_64_sha256 }}
+          LINUX_AARCH64_SHA256: ${{ steps.hashes.outputs.linux_aarch64_sha256 }}
+          MACOS_ARM64_SHA256: ${{ steps.hashes.outputs.macos_arm64_sha256 }}
+          WINDOWS_X86_64_SHA256: ${{ steps.hashes.outputs.windows_x86_64_sha256 }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          release_date = os.environ["RELEASE_DATE"]
+          base_url = os.environ["PUBLIC_ARTIFACT_BASE_URL"]
+          existing_path = Path("existing-manifest.json")
+
+          if existing_path.exists() and existing_path.stat().st_size > 0:
+              manifest = json.loads(existing_path.read_text(encoding="utf-8"))
+          else:
+              manifest = {"latest": version, "versions": {}}
+
+          manifest.setdefault("versions", {})
+          manifest["latest"] = version
+          manifest["versions"][version] = {
+              "date": release_date,
+              "platforms": {
+                  "linux-x86_64": {
+                      "url": f"{base_url}/{version}/tinyjpg-{version}-linux-x86_64.tar.gz",
+                      "sha256": os.environ["LINUX_X86_64_SHA256"],
+                  },
+                  "linux-aarch64": {
+                      "url": f"{base_url}/{version}/tinyjpg-{version}-linux-aarch64.tar.gz",
+                      "sha256": os.environ["LINUX_AARCH64_SHA256"],
+                  },
+                  "macos-arm64": {
+                      "url": f"{base_url}/{version}/tinyjpg-{version}-macos-arm64.tar.gz",
+                      "sha256": os.environ["MACOS_ARM64_SHA256"],
+                  },
+                  "windows-x86_64": {
+                      "url": f"{base_url}/{version}/tinyjpg-{version}-windows-x86_64.zip",
+                      "sha256": os.environ["WINDOWS_X86_64_SHA256"],
+                  },
+              },
+          }
+
+          Path("manifest.json").write_text(
+              json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload manifest, checksums, and install scripts to R2
+        run: |
+          aws s3 cp manifest.json "s3://${R2_BUCKET}/tinyjpg/manifest.json" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --content-type "application/json"
+          aws s3 cp manifest.json "s3://${R2_BUCKET}/tinyjpg/${VERSION}/manifest.json" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --content-type "application/json"
+          aws s3 cp SHA256SUMS "s3://${R2_BUCKET}/tinyjpg/${VERSION}/SHA256SUMS" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --content-type "text/plain"
+          aws s3 cp packaging/install/install.sh "s3://${R2_BUCKET}/install.sh" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --content-type "text/x-shellscript"
+          aws s3 cp packaging/install/install.ps1 "s3://${R2_BUCKET}/install.ps1" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}" \
+            --content-type "text/plain"
+
+  release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: manifest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Generate changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          prev_tag=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          if [ -n "$prev_tag" ]; then
+            range="$prev_tag..HEAD"
+          else
+            range="HEAD"
+          fi
+
+          tmpdir=$(mktemp -d)
+          trap 'rm -rf "$tmpdir"' EXIT
+
+          feat_file="$tmpdir/features"
+          fix_file="$tmpdir/fixes"
+          perf_file="$tmpdir/perf"
+          refactor_file="$tmpdir/refactor"
+          docs_file="$tmpdir/docs"
+          tests_file="$tmpdir/tests"
+          build_file="$tmpdir/build"
+          other_file="$tmpdir/other"
+          touch "$feat_file" "$fix_file" "$perf_file" "$refactor_file" "$docs_file" "$tests_file" "$build_file" "$other_file"
+
+          trim_leading() {
+            local value="$1"
+            value="${value#"${value%%[![:space:]]*}"}"
+            printf '%s' "$value"
+          }
+
+          while IFS= read -r subject; do
+            [ -n "$subject" ] || continue
+            raw_type="${subject%%:*}"
+            type="${raw_type%%(*}"
+            type="${type,,}"
+
+            if [ "$subject" != "${subject#*:}" ]; then
+              item=$(trim_leading "${subject#*:}")
+            else
+              item="$subject"
+            fi
+            item="${item^}"
+
+            case "$type" in
+              feat|feature) target="$feat_file" ;;
+              fix|bugfix) target="$fix_file" ;;
+              perf|performance) target="$perf_file" ;;
+              refactor) target="$refactor_file" ;;
+              docs) target="$docs_file" ;;
+              test|tests) target="$tests_file" ;;
+              build|ci) target="$build_file" ;;
+              chore) continue ;;
+              *) target="$other_file" ;;
+            esac
+
+            printf -- "- %s\n" "$item" >> "$target"
+          done < <(git log "$range" --pretty=format:%s --no-merges)
+
+          render_section() {
+            local title="$1"
+            local file="$2"
+            if [ -s "$file" ]; then
+              printf '### %s\n' "$title" >> changelog-body.md
+              cat "$file" >> changelog-body.md
+              printf '\n' >> changelog-body.md
+            fi
+          }
+
+          : > changelog-body.md
+          render_section "New Features" "$feat_file"
+          render_section "Bug Fixes" "$fix_file"
+          render_section "Performance Improvements" "$perf_file"
+          render_section "Code Refactoring" "$refactor_file"
+          render_section "Documentation" "$docs_file"
+          render_section "Tests" "$tests_file"
+          render_section "Build & CI" "$build_file"
+          render_section "Other Changes" "$other_file"
+
+          if [ ! -s changelog-body.md ]; then
+            echo "No user-facing changes." > changelog-body.md
+          fi
+
+      - name: Render release notes
+        shell: bash
+        env:
+          LINUX_X86_64_SHA256: ${{ needs.manifest.outputs.linux_x86_64_sha256 }}
+          LINUX_AARCH64_SHA256: ${{ needs.manifest.outputs.linux_aarch64_sha256 }}
+          MACOS_ARM64_SHA256: ${{ needs.manifest.outputs.macos_arm64_sha256 }}
+          WINDOWS_X86_64_SHA256: ${{ needs.manifest.outputs.windows_x86_64_sha256 }}
+        run: |
+          {
+            echo "## What's Changed"
+            cat changelog-body.md
+            echo "---"
+            echo "## Installation"
+            echo "### Linux & macOS (one command)"
+            echo '```bash'
+            echo "curl -fsSL https://tj.eorlov.org/install.sh | sh"
+            echo '```'
+            echo "Install a specific version:"
+            echo '```bash'
+            echo "curl -fsSL https://tj.eorlov.org/install.sh | sh -s -- --version $VERSION"
+            echo '```'
+            echo "### Windows (one command)"
+            echo "Open PowerShell and run:"
+            echo '```powershell'
+            echo "irm https://pq.eorlov.org/install.ps1 | iex"
+            echo '```'
+            echo "Install a specific version:"
+            echo '```powershell'
+            echo "irm https://pq.eorlov.org/install.ps1 -OutFile install.ps1; ./install.ps1 -Version $VERSION"
+            echo '```'
+            echo "### Package managers"
+            echo "Homebrew (macOS):"
+            echo '```bash'
+            echo "brew install tinyjpg"
+            echo '```'
+            echo "Scoop (Windows):"
+            echo '```powershell'
+            echo "scoop install tinyjpg"
+            echo '```'
+            echo "## Downloads"
+            echo "| Platform | File | SHA256 |"
+            echo "| --- | --- | --- |"
+            echo "| Linux x86_64 | [tinyjpg-$VERSION-linux-x86_64.tar.gz](https://tinyjpg.eorlov.org/tinyjpg/$VERSION/tinyjpg-$VERSION-linux-x86_64.tar.gz) | \`$LINUX_X86_64_SHA256\` |"
+            echo "| Linux ARM64 | [tinyjpg-$VERSION-linux-aarch64.tar.gz](https://tinyjpg.eorlov.org/tinyjpg/$VERSION/tinyjpg-$VERSION-linux-aarch64.tar.gz) | \`$LINUX_AARCH64_SHA256\` |"
+            echo "| macOS Apple Silicon | [tinyjpg-$VERSION-macos-arm64.tar.gz](https://tinyjpg.eorlov.org/tinyjpg/$VERSION/tinyjpg-$VERSION-macos-arm64.tar.gz) | \`$MACOS_ARM64_SHA256\` |"
+            echo "| Windows x86_64 | [tinyjpg-$VERSION-windows-x86_64.zip](https://tinyjpg.eorlov.org/tinyjpg/$VERSION/tinyjpg-$VERSION-windows-x86_64.zip) | \`$WINDOWS_X86_64_SHA256\` |"
+            echo
+            echo "Full checksums: [SHA256SUMS](https://tinyjpg.eorlov.org/tinyjpg/$VERSION/SHA256SUMS)"
+          } > release-notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "TinyJPG ${{ env.VERSION }}" \
+            --notes-file release-notes.md \
+            --repo "${{ github.repository }}"

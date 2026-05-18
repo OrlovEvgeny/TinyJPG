@@ -96,7 +96,8 @@ set_target_properties(
 target_compile_definitions(
   tinyjpg_core
   PUBLIC TINYJPG_VERSION="${PROJECT_VERSION}"
-         TINYJPG_PROJECT_NAME="${PROJECT_NAME}")
+         TINYJPG_PROJECT_NAME="${PROJECT_NAME}"
+         TINYJPG_UPDATE_URL="https://tinyjpg.eorlov.org/tinyjpg/manifest.json")
 
 function(tinyjpg_apply_warnings target)
   if(MSVC)

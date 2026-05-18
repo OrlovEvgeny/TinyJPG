@@ -4,7 +4,7 @@ class Tinyjpg < Formula
   version "@PROJECT_VERSION@"
 
   on_macos do
-    url "https://github.com/OrlovEvgeny/TinyJPG/releases/download/v#{version}/tinyjpg-#{version}-macos.tar.gz"
+    url "https://tinyjpg.eorlov.org/tinyjpg/#{version}/tinyjpg-#{version}-macos-arm64.tar.gz"
   end
 
   def install

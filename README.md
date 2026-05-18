@@ -41,6 +41,18 @@ about 84%.
 
 ## Install
 
+Install the latest release on Linux or macOS:
+
+```bash
+curl -fsSL https://tj.eorlov.org/install.sh | sh
+```
+
+Install the latest release on Windows PowerShell:
+
+```powershell
+irm https://pq.eorlov.org/install.ps1 | iex
+```
+
 Build from source with CMake, Ninja, a C++23 compiler, and vcpkg:
 
 ```bash

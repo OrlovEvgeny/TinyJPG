@@ -5,7 +5,7 @@
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/OrlovEvgeny/TinyJPG/releases/download/v@PROJECT_VERSION@/tinyjpg-@PROJECT_VERSION@-windows.zip",
+      "url": "https://tinyjpg.eorlov.org/tinyjpg/@PROJECT_VERSION@/tinyjpg-@PROJECT_VERSION@-windows-x86_64.zip",
       "hash": "sha256:TO_BE_FILLED_BY_RELEASE"
     }
   },
@@ -14,7 +14,7 @@
   "autoupdate": {
     "architecture": {
       "64bit": {
-        "url": "https://github.com/OrlovEvgeny/TinyJPG/releases/download/v$version/tinyjpg-$version-windows.zip"
+        "url": "https://tinyjpg.eorlov.org/tinyjpg/$version/tinyjpg-$version-windows-x86_64.zip"
       }
     }
   }
