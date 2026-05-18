@@ -560,8 +560,7 @@ using JxlEncoderPtr = std::unique_ptr<JxlEncoder, JxlEncoderDeleter>;
   return EncodedImage{.codec = Codec::png, .bytes = std::move(bytes)};
 }
 
-[[nodiscard]] Result<EncodedImage> encode_jpeg(const Image& image, Quality quality,
-                                               FidelityMode mode) {
+[[nodiscard]] Result<EncodedImage> encode_jpeg(const Image& image, Quality quality) {
   auto info = jpeg_compress_struct{};
   auto error = JpegErrorManager{};
   info.err = jpeg_std_error(&error.base);
@@ -585,15 +584,7 @@ using JxlEncoderPtr = std::unique_ptr<JxlEncoder, JxlEncoderDeleter>;
   info.in_color_space = JCS_RGB;
 
   jpeg_set_defaults(&info);
-  const auto jpeg_quality =
-      mode == FidelityMode::lossless ? std::max(quality.percent(), 95) : quality.percent();
-  jpeg_set_quality(&info, jpeg_quality, TRUE);
-  if (mode == FidelityMode::lossless) {
-    for (auto component = 0; component < info.num_components; ++component) {
-      info.comp_info[component].h_samp_factor = 1;
-      info.comp_info[component].v_samp_factor = 1;
-    }
-  }
+  jpeg_set_quality(&info, quality.percent(), TRUE);
   info.optimize_coding = TRUE;
   jpeg_simple_progression(&info);
   jpeg_start_compress(&info, TRUE);
@@ -612,63 +603,6 @@ using JxlEncoderPtr = std::unique_ptr<JxlEncoder, JxlEncoderDeleter>;
 
   return EncodedImage{.codec = Codec::jpeg, .bytes = std::move(bytes)};
 }
-
-}  // namespace
-
-Result<EncodedImage> optimize_jpeg_lossless(const std::filesystem::path& path) {
-  auto file = open_file(path, "rb");
-  if (!file) {
-    return unexpected(Error::filesystem(path, "failed to open JPEG file"));
-  }
-
-  auto source = jpeg_decompress_struct{};
-  auto output = jpeg_compress_struct{};
-  auto error = JpegErrorManager{};
-  source.err = jpeg_std_error(&error.base);
-  output.err = source.err;
-  error.base.error_exit = jpeg_error_exit;
-
-  auto* raw_bytes = static_cast<unsigned char*>(nullptr);
-  auto raw_size = static_cast<unsigned long>(0);
-  auto source_created = false;
-  auto output_created = false;
-
-  if (setjmp(error.jump) != 0) {
-    if (output_created) {
-      jpeg_destroy_compress(&output);
-    }
-    if (source_created) {
-      jpeg_destroy_decompress(&source);
-    }
-    std::free(raw_bytes);
-    return unexpected(Error::filesystem(path, error.message));
-  }
-
-  jpeg_create_decompress(&source);
-  source_created = true;
-  jpeg_stdio_src(&source, file.get());
-  jpeg_read_header(&source, TRUE);
-  auto* coefficients = jpeg_read_coefficients(&source);
-
-  jpeg_create_compress(&output);
-  output_created = true;
-  jpeg_mem_dest(&output, &raw_bytes, &raw_size);
-  jpeg_copy_critical_parameters(&source, &output);
-  output.optimize_coding = TRUE;
-  jpeg_simple_progression(&output);
-  jpeg_write_coefficients(&output, coefficients);
-  jpeg_finish_compress(&output);
-  jpeg_finish_decompress(&source);
-
-  auto bytes = std::vector<std::uint8_t>{raw_bytes, raw_bytes + raw_size};
-  jpeg_destroy_compress(&output);
-  jpeg_destroy_decompress(&source);
-  std::free(raw_bytes);
-
-  return EncodedImage{.codec = Codec::jpeg, .bytes = std::move(bytes)};
-}
-
-namespace {
 
 #if defined(TINYJPG_HAS_WEBP)
 [[nodiscard]] Result<EncodedImage> encode_webp(const Image& image, Quality quality,
@@ -912,7 +846,7 @@ Result<EncodedImage> encode_image(const Image& image, Codec codec, Quality quali
     return encode_png(image, effort);
   }
   if (codec == Codec::jpeg) {
-    return encode_jpeg(image, quality, mode);
+    return encode_jpeg(image, quality);
   }
 #if defined(TINYJPG_HAS_WEBP)
   if (codec == Codec::webp) {

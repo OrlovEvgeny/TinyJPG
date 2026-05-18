@@ -24,7 +24,6 @@ struct EncodedImage {
 [[nodiscard]] std::filesystem::path replace_extension_for_codec(std::filesystem::path path,
                                                                 Codec codec);
 [[nodiscard]] Result<Image> decode_image(const std::filesystem::path& path);
-[[nodiscard]] Result<EncodedImage> optimize_jpeg_lossless(const std::filesystem::path& path);
 [[nodiscard]] Result<EncodedImage> encode_image(const Image& image, Codec codec, Quality quality,
                                                 FidelityMode mode, EffortLevel effort);
 
