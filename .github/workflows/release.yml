@@ -36,7 +36,19 @@ jobs:
           echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
 
       - name: Install Linux tools
-        run: sudo apt-get update && sudo apt-get install -y awscli nasm ninja-build
+        run: sudo apt-get update && sudo apt-get install -y curl nasm ninja-build unzip
+
+      - name: Install AWS CLI
+        run: |
+          case "$(uname -m)" in
+            x86_64) aws_arch="x86_64" ;;
+            aarch64|arm64) aws_arch="aarch64" ;;
+            *) echo "Unsupported AWS CLI architecture: $(uname -m)" >&2; exit 1 ;;
+          esac
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" -o awscliv2.zip
+          unzip -q awscliv2.zip
+          sudo ./aws/install --update
+          aws --version
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -103,7 +115,19 @@ jobs:
           echo "ARCHIVE_NAME=tinyjpg-${GITHUB_REF_NAME#v}-${ARCHIVE_SUFFIX}" >> "$GITHUB_ENV"
 
       - name: Install Linux tools
-        run: sudo apt-get update && sudo apt-get install -y awscli nasm ninja-build
+        run: sudo apt-get update && sudo apt-get install -y curl nasm ninja-build unzip
+
+      - name: Install AWS CLI
+        run: |
+          case "$(uname -m)" in
+            x86_64) aws_arch="x86_64" ;;
+            aarch64|arm64) aws_arch="aarch64" ;;
+            *) echo "Unsupported AWS CLI architecture: $(uname -m)" >&2; exit 1 ;;
+          esac
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" -o awscliv2.zip
+          unzip -q awscliv2.zip
+          sudo ./aws/install --update
+          aws --version
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -334,7 +358,13 @@ jobs:
           echo "RELEASE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
 
       - name: Install AWS CLI
-        run: sudo apt-get update && sudo apt-get install -y awscli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl unzip
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+          unzip -q awscliv2.zip
+          sudo ./aws/install --update
+          aws --version
 
       - name: Configure AWS CLI for R2
         run: |
