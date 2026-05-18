@@ -82,7 +82,9 @@ Result<ProcessResult> process_file(const std::filesystem::path& input_path,
       return unexpected(resized.error());
     }
 
-    auto encoded = encode_image(*resized, variant.codec, variant.quality, config.compress.effort);
+    const auto mode = variant.variant.mode.value_or(config.compress.mode);
+    auto encoded =
+        encode_image(*resized, variant.codec, variant.quality, mode, config.compress.effort);
     if (!encoded) {
       return unexpected(encoded.error());
     }

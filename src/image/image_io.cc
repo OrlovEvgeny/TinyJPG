@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <span>
 #include <string>
@@ -14,6 +16,10 @@
 // jpeglib.h depends on size_t and FILE declarations being visible first.
 #include <jpeglib.h>
 #include <png.h>
+#if defined(TINYJPG_HAS_WEBP)
+#include <webp/decode.h>
+#include <webp/encode.h>
+#endif
 
 #include "tinyjpg/image/image.hh"
 
@@ -221,6 +227,63 @@ void jpeg_error_exit(j_common_ptr info) {
   };
 }
 
+#if defined(TINYJPG_HAS_WEBP)
+[[nodiscard]] Result<std::vector<std::uint8_t>> read_binary_file(
+    const std::filesystem::path& path) {
+  auto in = std::ifstream{path, std::ios::binary};
+  if (!in) {
+    return unexpected(Error::filesystem(path, "failed to open image file"));
+  }
+  return std::vector<std::uint8_t>{std::istreambuf_iterator<char>{in},
+                                   std::istreambuf_iterator<char>{}};
+}
+
+struct WebPBufferDeleter {
+  void operator()(std::uint8_t* buffer) const noexcept {
+    if (buffer != nullptr) {
+      WebPFree(buffer);
+    }
+  }
+};
+
+using WebPBufferPtr = std::unique_ptr<std::uint8_t, WebPBufferDeleter>;
+
+[[nodiscard]] Result<Image> decode_webp(const std::filesystem::path& path) {
+  auto bytes = read_binary_file(path);
+  if (!bytes) {
+    return unexpected(bytes.error());
+  }
+
+  auto width = 0;
+  auto height = 0;
+  if (WebPGetInfo(bytes->data(), bytes->size(), &width, &height) == 0) {
+    return unexpected(Error::filesystem(path, "failed to read WebP metadata"));
+  }
+
+  auto* decoded = WebPDecodeRGB(bytes->data(), bytes->size(), &width, &height);
+  if (decoded == nullptr) {
+    return unexpected(Error::filesystem(path, "failed to decode WebP file"));
+  }
+  auto owned = WebPBufferPtr{decoded};
+
+  auto checked_width = PositiveInt::from(width, "image.width");
+  auto checked_height = PositiveInt::from(height, "image.height");
+  if (!checked_width) {
+    return unexpected(checked_width.error());
+  }
+  if (!checked_height) {
+    return unexpected(checked_height.error());
+  }
+
+  const auto byte_count = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 3U;
+  return Image{
+      .width = *checked_width,
+      .height = *checked_height,
+      .pixels = std::vector<std::uint8_t>{owned.get(), owned.get() + byte_count},
+  };
+}
+#endif
+
 [[nodiscard]] Result<EncodedImage> encode_png(const Image& image, EffortLevel effort) {
   auto guard = PngWriteGuard{
       .png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr),
@@ -309,6 +372,29 @@ void jpeg_error_exit(j_common_ptr info) {
   return EncodedImage{.codec = Codec::jpeg, .bytes = std::move(bytes)};
 }
 
+#if defined(TINYJPG_HAS_WEBP)
+[[nodiscard]] Result<EncodedImage> encode_webp(const Image& image, Quality quality,
+                                               FidelityMode mode) {
+  auto* raw_bytes = static_cast<std::uint8_t*>(nullptr);
+  const auto width = image.width.value();
+  const auto height = image.height.value();
+  const auto stride = width * 3;
+  const auto byte_count =
+      mode == FidelityMode::lossless
+          ? WebPEncodeLosslessRGB(image.pixels.data(), width, height, stride, &raw_bytes)
+          : WebPEncodeRGB(image.pixels.data(), width, height, stride,
+                          static_cast<float>(quality.percent()), &raw_bytes);
+  if (byte_count == 0 || raw_bytes == nullptr) {
+    return unexpected(Error::internal("failed to encode WebP image"));
+  }
+  auto owned = WebPBufferPtr{raw_bytes};
+  return EncodedImage{
+      .codec = Codec::webp,
+      .bytes = std::vector<std::uint8_t>{owned.get(), owned.get() + byte_count},
+  };
+}
+#endif
+
 }  // namespace
 
 Result<Codec> codec_from_path(const std::filesystem::path& path) {
@@ -318,6 +404,11 @@ Result<Codec> codec_from_path(const std::filesystem::path& path) {
   if (has_extension(path, ".jpg") || has_extension(path, ".jpeg")) {
     return Codec::jpeg;
   }
+#if defined(TINYJPG_HAS_WEBP)
+  if (has_extension(path, ".webp")) {
+    return Codec::webp;
+  }
+#endif
   return unexpected(
       Error::unsupported("unsupported image extension: " + path.extension().string()));
 }
@@ -330,8 +421,10 @@ std::filesystem::path replace_extension_for_codec(std::filesystem::path path, Co
     case Codec::png:
       path.replace_extension(".png");
       break;
-    case Codec::auto_select:
     case Codec::webp:
+      path.replace_extension(".webp");
+      break;
+    case Codec::auto_select:
     case Codec::avif:
     case Codec::jxl:
       break;
@@ -350,11 +443,16 @@ Result<Image> decode_image(const std::filesystem::path& path) {
   if (*codec == Codec::jpeg) {
     return decode_jpeg(path);
   }
+#if defined(TINYJPG_HAS_WEBP)
+  if (*codec == Codec::webp) {
+    return decode_webp(path);
+  }
+#endif
   return unexpected(Error::unsupported("unsupported image codec"));
 }
 
 Result<EncodedImage> encode_image(const Image& image, Codec codec, Quality quality,
-                                  EffortLevel effort) {
+                                  FidelityMode mode, EffortLevel effort) {
   if (image.pixels.size() != static_cast<std::size_t>(image.width.value()) *
                                  static_cast<std::size_t>(image.height.value()) * 3U) {
     return unexpected(Error::invalid_argument("image pixels must be packed RGB"));
@@ -365,6 +463,13 @@ Result<EncodedImage> encode_image(const Image& image, Codec codec, Quality quali
   if (codec == Codec::jpeg) {
     return encode_jpeg(image, quality);
   }
+#if defined(TINYJPG_HAS_WEBP)
+  if (codec == Codec::webp) {
+    return encode_webp(image, quality, mode);
+  }
+#else
+  static_cast<void>(mode);
+#endif
   return unexpected(Error::unsupported("unsupported output codec"));
 }
 

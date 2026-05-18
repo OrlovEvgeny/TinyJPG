@@ -16,9 +16,15 @@ include(GNUInstallDirs)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(PNG REQUIRED)
+find_package(WebP CONFIG QUIET)
+find_package(PkgConfig QUIET)
 find_package(spdlog CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
+
+if(NOT WebP_FOUND AND PkgConfig_FOUND)
+  pkg_check_modules(WEBP QUIET IMPORTED_TARGET libwebp)
+endif()
 
 add_library(tinyjpg_core)
 add_library(tinyjpg::tinyjpg ALIAS tinyjpg_core)
@@ -48,6 +54,14 @@ target_link_libraries(
   tinyjpg_core
   PUBLIC CLI11::CLI11
   PRIVATE JPEG::JPEG PNG::PNG spdlog::spdlog tomlplusplus::tomlplusplus yaml-cpp::yaml-cpp)
+
+if(WebP_FOUND)
+  target_link_libraries(tinyjpg_core PRIVATE WebP::webp)
+  target_compile_definitions(tinyjpg_core PUBLIC TINYJPG_HAS_WEBP=1)
+elseif(WEBP_FOUND)
+  target_link_libraries(tinyjpg_core PRIVATE PkgConfig::WEBP)
+  target_compile_definitions(tinyjpg_core PUBLIC TINYJPG_HAS_WEBP=1)
+endif()
 
 set_target_properties(
   tinyjpg_core

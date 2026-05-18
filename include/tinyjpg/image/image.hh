@@ -25,6 +25,6 @@ struct EncodedImage {
                                                                 Codec codec);
 [[nodiscard]] Result<Image> decode_image(const std::filesystem::path& path);
 [[nodiscard]] Result<EncodedImage> encode_image(const Image& image, Codec codec, Quality quality,
-                                                EffortLevel effort);
+                                                FidelityMode mode, EffortLevel effort);
 
 }  // namespace tinyjpg

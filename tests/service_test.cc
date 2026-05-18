@@ -68,7 +68,7 @@ TEST_CASE("scan uses ledger to skip unchanged files") {
   const auto image = test_image();
   const auto encoded =
       tinyjpg::encode_image(image, tinyjpg::Codec::png, tinyjpg::Quality::from_percent(82).value(),
-                            tinyjpg::EffortLevel::fast);
+                            tinyjpg::FidelityMode::lossless, tinyjpg::EffortLevel::fast);
   REQUIRE(encoded.has_value());
   write_bytes(root / "input.png", encoded->bytes);
 

@@ -45,7 +45,7 @@ TEST_CASE("png round trip preserves pixels") {
   const auto image = test_image();
   const auto encoded =
       tinyjpg::encode_image(image, tinyjpg::Codec::png, tinyjpg::Quality::from_percent(82).value(),
-                            tinyjpg::EffortLevel::max);
+                            tinyjpg::FidelityMode::lossless, tinyjpg::EffortLevel::max);
   REQUIRE(encoded.has_value());
 
   const auto path = temp_path("tinyjpg-round-trip.png");
@@ -62,7 +62,7 @@ TEST_CASE("pipeline writes a smaller optimized png") {
   const auto image = test_image();
   const auto input =
       tinyjpg::encode_image(image, tinyjpg::Codec::png, tinyjpg::Quality::from_percent(82).value(),
-                            tinyjpg::EffortLevel::fast);
+                            tinyjpg::FidelityMode::lossless, tinyjpg::EffortLevel::fast);
   REQUIRE(input.has_value());
 
   const auto input_path = temp_path("tinyjpg-pipeline-input.png");
@@ -89,7 +89,7 @@ TEST_CASE("pipeline writes the configured variant set") {
   const auto image = test_image();
   const auto input =
       tinyjpg::encode_image(image, tinyjpg::Codec::png, tinyjpg::Quality::from_percent(82).value(),
-                            tinyjpg::EffortLevel::fast);
+                            tinyjpg::FidelityMode::lossless, tinyjpg::EffortLevel::fast);
   REQUIRE(input.has_value());
 
   const auto input_path = temp_path("tinyjpg-pipeline-variants.png");
@@ -114,7 +114,7 @@ TEST_CASE("jpeg codec decodes encoded output") {
   const auto image = test_image();
   const auto encoded =
       tinyjpg::encode_image(image, tinyjpg::Codec::jpeg, tinyjpg::Quality::from_percent(90).value(),
-                            tinyjpg::EffortLevel::balanced);
+                            tinyjpg::FidelityMode::lossless, tinyjpg::EffortLevel::balanced);
   REQUIRE(encoded.has_value());
 
   const auto path = temp_path("tinyjpg-round-trip.jpg");
@@ -126,12 +126,31 @@ TEST_CASE("jpeg codec decodes encoded output") {
   CHECK(decoded->height == image.height);
   CHECK(decoded->pixels.size() == image.pixels.size());
 }
+
+#if defined(TINYJPG_HAS_WEBP)
+TEST_CASE("webp codec decodes encoded output") {
+  const auto image = test_image();
+  const auto encoded =
+      tinyjpg::encode_image(image, tinyjpg::Codec::webp, tinyjpg::Quality::from_percent(90).value(),
+                            tinyjpg::FidelityMode::lossless, tinyjpg::EffortLevel::balanced);
+  REQUIRE(encoded.has_value());
+
+  const auto path = temp_path("tinyjpg-round-trip.webp");
+  write_bytes(path, encoded->bytes);
+
+  const auto decoded = tinyjpg::decode_image(path);
+  REQUIRE(decoded.has_value());
+  CHECK(decoded->width == image.width);
+  CHECK(decoded->height == image.height);
+  CHECK(decoded->pixels == image.pixels);
+}
+#endif
 #else
 int main() {
   auto image = test_image();
   auto encoded =
       tinyjpg::encode_image(image, tinyjpg::Codec::png, tinyjpg::Quality::from_percent(82).value(),
-                            tinyjpg::EffortLevel::max);
+                            tinyjpg::FidelityMode::lossless, tinyjpg::EffortLevel::max);
   if (!encoded) {
     return 1;
   }

@@ -11,6 +11,7 @@
     },
     "libjpeg-turbo",
     "libpng",
+    "libwebp",
     "spdlog",
     "tomlplusplus",
     "yaml-cpp"
