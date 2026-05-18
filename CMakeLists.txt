@@ -35,6 +35,7 @@ target_sources(
           src/image/image_io.cc
           src/image/resize.cc
           src/pipeline/job.cc
+          src/pipeline/planner.cc
           src/platform/atomic_file.cc)
 
 target_include_directories(
@@ -107,6 +108,7 @@ if(BUILD_TESTING)
   tinyjpg_add_test(tinyjpg_config_io_test tests/config_io_test.cc)
   tinyjpg_add_test(tinyjpg_image_pipeline_test tests/image_pipeline_test.cc)
   tinyjpg_add_test(tinyjpg_log_test tests/log_test.cc)
+  tinyjpg_add_test(tinyjpg_planner_test tests/planner_test.cc)
   tinyjpg_add_test(tinyjpg_version_test tests/version_test.cc)
   add_test(NAME tinyjpg.version.cli COMMAND tinyjpg --version)
 endif()

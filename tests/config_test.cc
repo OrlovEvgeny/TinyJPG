@@ -2,6 +2,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 
 #if defined(TINYJPG_HAS_DOCTEST)
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -44,6 +45,16 @@ TEST_CASE("output pattern is required") {
   REQUIRE_FALSE(result.has_value());
   CHECK(result.error().message.find("output.pattern") != std::string_view::npos);
 }
+
+TEST_CASE("built-in presets validate") {
+  for (const auto name : tinyjpg::preset_names()) {
+    auto config = tinyjpg::default_config().value();
+    auto preset = tinyjpg::variant_preset(name);
+    REQUIRE(preset.has_value());
+    config.variants = *std::move(preset);
+    CHECK(tinyjpg::validate_config(config).has_value());
+  }
+}
 #else
 int main() {
   auto config = tinyjpg::default_config();
@@ -73,6 +84,13 @@ int main() {
   missing_pattern.output.pattern.clear();
   if (tinyjpg::validate_config(missing_pattern).has_value()) {
     return 1;
+  }
+
+  for (const auto name : tinyjpg::preset_names()) {
+    auto preset = tinyjpg::variant_preset(name);
+    if (!preset.has_value()) {
+      return 1;
+    }
   }
 
   return 0;

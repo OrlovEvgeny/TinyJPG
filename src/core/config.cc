@@ -90,7 +90,7 @@ Result<EnumValue> parse_enum(std::string_view input,
 
   return VariantConfig{
       .name = *std::move(name),
-      .codec = Codec::webp,
+      .codec = Codec::auto_select,
       .mode = std::nullopt,
       .quality = *quality,
       .max_width = *width,
@@ -185,8 +185,8 @@ Result<AppConfig> default_config() {
 
   auto thumb = thumb_variant();
   auto original = original_variant();
-  auto large = sized_variant("large", 1920, Codec::webp, std::nullopt, "-large");
-  auto medium = sized_variant("medium", 1024, Codec::webp, *medium_quality, "-medium");
+  auto large = sized_variant("large", 1920, Codec::auto_select, std::nullopt, "-large");
+  auto medium = sized_variant("medium", 1024, Codec::auto_select, *medium_quality, "-medium");
 
   if (!thumb) {
     return unexpected(thumb.error());
@@ -267,6 +267,72 @@ Result<void> validate_config(const AppConfig& config) {
   }
 
   return {};
+}
+
+std::vector<std::string_view> preset_names() { return {"web", "ecommerce", "avatar"}; }
+
+Result<std::vector<VariantConfig>> variant_preset(std::string_view name) {
+  auto original = original_variant();
+  if (!original) {
+    return unexpected(original.error());
+  }
+
+  if (name == "web") {
+    auto large = sized_variant("large", 1920, Codec::auto_select, std::nullopt, "-large");
+    auto medium_quality = Quality::from_percent(82);
+    if (!medium_quality) {
+      return unexpected(medium_quality.error());
+    }
+    auto medium = sized_variant("medium", 1024, Codec::auto_select, *medium_quality, "-medium");
+    auto thumb = thumb_variant();
+    if (!large) {
+      return unexpected(large.error());
+    }
+    if (!medium) {
+      return unexpected(medium.error());
+    }
+    if (!thumb) {
+      return unexpected(thumb.error());
+    }
+    thumb->codec = Codec::auto_select;
+    return std::vector<VariantConfig>{*std::move(original), *std::move(large), *std::move(medium),
+                                      *std::move(thumb)};
+  }
+
+  if (name == "ecommerce") {
+    auto hero = sized_variant("hero", 1600, Codec::auto_select, std::nullopt, "-hero");
+    auto listing = sized_variant("listing", 900, Codec::auto_select, std::nullopt, "-listing");
+    auto thumb = sized_variant("thumb", 320, Codec::auto_select, std::nullopt, "-thumb");
+    if (!hero) {
+      return unexpected(hero.error());
+    }
+    if (!listing) {
+      return unexpected(listing.error());
+    }
+    if (!thumb) {
+      return unexpected(thumb.error());
+    }
+    return std::vector<VariantConfig>{*std::move(original), *std::move(hero), *std::move(listing),
+                                      *std::move(thumb)};
+  }
+
+  if (name == "avatar") {
+    auto full = sized_variant("full", 512, Codec::auto_select, std::nullopt, "-full");
+    auto thumb = sized_variant("thumb", 128, Codec::auto_select, std::nullopt, "-thumb");
+    if (!full) {
+      return unexpected(full.error());
+    }
+    if (!thumb) {
+      return unexpected(thumb.error());
+    }
+    full->max_height = full->max_width;
+    full->fit = FitMode::cover;
+    thumb->max_height = thumb->max_width;
+    thumb->fit = FitMode::cover;
+    return std::vector<VariantConfig>{*std::move(original), *std::move(full), *std::move(thumb)};
+  }
+
+  return unexpected(Error::config("unknown preset: " + std::string{name}));
 }
 
 }  // namespace tinyjpg

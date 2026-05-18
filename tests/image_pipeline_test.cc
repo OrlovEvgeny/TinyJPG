@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <fstream>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -73,13 +74,40 @@ TEST_CASE("pipeline writes a smaller optimized png") {
   config.compress.effort = tinyjpg::EffortLevel::max;
   const auto result = tinyjpg::process_file(input_path, config);
   REQUIRE(result.has_value());
-  REQUIRE(result->written);
-  CHECK(result->output_path == output_path);
-  CHECK(result->bytes_after < result->bytes_before);
+  REQUIRE_FALSE(result->variants.empty());
+  const auto& original = result->variants.front();
+  REQUIRE(original.written);
+  CHECK(original.output_path == output_path);
+  CHECK(original.bytes_after < result->bytes_before);
 
   const auto decoded = tinyjpg::decode_image(output_path);
   REQUIRE(decoded.has_value());
   CHECK(decoded->pixels == image.pixels);
+}
+
+TEST_CASE("pipeline writes the configured variant set") {
+  const auto image = test_image();
+  const auto input =
+      tinyjpg::encode_image(image, tinyjpg::Codec::png, tinyjpg::Quality::from_percent(82).value(),
+                            tinyjpg::EffortLevel::fast);
+  REQUIRE(input.has_value());
+
+  const auto input_path = temp_path("tinyjpg-pipeline-variants.png");
+  for (const auto suffix : {"-optimized", "-large", "-medium", "-thumb"}) {
+    std::filesystem::remove(temp_path(std::string{"tinyjpg-pipeline-variants"} + suffix + ".png"));
+  }
+  write_bytes(input_path, input->bytes);
+
+  auto config = tinyjpg::default_config().value();
+  config.compress.effort = tinyjpg::EffortLevel::max;
+  const auto result = tinyjpg::process_file(input_path, config);
+  REQUIRE(result.has_value());
+  REQUIRE(result->variants.size() == config.variants.size());
+
+  for (const auto& variant : result->variants) {
+    CHECK(variant.codec == tinyjpg::Codec::png);
+    CHECK(variant.output_path.extension() == ".png");
+  }
 }
 
 TEST_CASE("jpeg codec decodes encoded output") {

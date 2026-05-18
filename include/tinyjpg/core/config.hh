@@ -81,5 +81,7 @@ struct AppConfig {
 
 [[nodiscard]] Result<AppConfig> default_config();
 [[nodiscard]] Result<void> validate_config(const AppConfig& config);
+[[nodiscard]] std::vector<std::string_view> preset_names();
+[[nodiscard]] Result<std::vector<VariantConfig>> variant_preset(std::string_view name);
 
 }  // namespace tinyjpg
