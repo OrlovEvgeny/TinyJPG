@@ -2,10 +2,12 @@
 
 #include <CLI/CLI.hpp>
 #include <iostream>
+#include <string>
 #include <string_view>
 
 #include "tinyjpg/core/config_io.hh"
 #include "tinyjpg/core/version.hh"
+#include "tinyjpg/pipeline/job.hh"
 
 namespace tinyjpg::app {
 namespace {
@@ -24,6 +26,8 @@ ExitCode run(std::span<char const* const> args) {
   auto printed_defaults = false;
   auto config_path = std::string{};
   auto legacy_path = std::string{};
+  auto run_input_path = std::string{};
+  auto run_config_path = std::string{};
 
   auto* config = app.add_subcommand("config", "Inspect and validate configuration");
   auto* print = config->add_subcommand("print", "Print a sample configuration");
@@ -58,6 +62,29 @@ ExitCode run(std::span<char const* const> args) {
       throw CLI::RuntimeError(rendered.error().message, static_cast<int>(ExitCode::usage));
     }
     std::cout << *rendered;
+  });
+
+  auto* run_command = app.add_subcommand("run", "Optimize one image file");
+  run_command->add_option("file", run_input_path, "Image file to optimize")->required();
+  run_command->add_option("--config,-c", run_config_path, "TOML configuration file");
+  run_command->callback([&run_input_path, &run_config_path] {
+    auto config = run_config_path.empty() ? default_config() : load_toml_config(run_config_path);
+    if (!config) {
+      throw CLI::RuntimeError(config.error().message, static_cast<int>(ExitCode::usage));
+    }
+
+    const auto result = process_file(run_input_path, *config);
+    if (!result) {
+      throw CLI::RuntimeError(result.error().message, static_cast<int>(ExitCode::usage));
+    }
+
+    if (!result->written) {
+      std::cout << "nothing written; optimized output was not smaller\n";
+      return;
+    }
+
+    std::cout << result->output_path.string() << " " << result->bytes_before - result->bytes_after
+              << " bytes saved\n";
   });
 
   if (args.size() <= 1) {
