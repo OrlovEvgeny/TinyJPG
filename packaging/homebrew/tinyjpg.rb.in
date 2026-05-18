@@ -5,6 +5,7 @@ class Tinyjpg < Formula
 
   on_macos do
     url "https://tinyjpg.eorlov.org/tinyjpg/#{version}/tinyjpg-#{version}-macos-arm64.tar.gz"
+    sha256 "TO_BE_FILLED_BY_RELEASE"
   end
 
   def install

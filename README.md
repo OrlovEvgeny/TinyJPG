@@ -53,6 +53,13 @@ Install the latest release on Windows PowerShell:
 irm https://pq.eorlov.org/install.ps1 | iex
 ```
 
+Install with Homebrew on Apple Silicon macOS:
+
+```bash
+brew tap OrlovEvgeny/tinyjpg
+brew install tinyjpg
+```
+
 Build from source with CMake, Ninja, a C++23 compiler, and vcpkg:
 
 ```bash
