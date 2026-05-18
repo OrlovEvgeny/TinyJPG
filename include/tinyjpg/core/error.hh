@@ -22,11 +22,19 @@ struct Error {
   std::optional<std::filesystem::path> path;
 
   [[nodiscard]] static Error invalid_argument(std::string message) {
-    return Error{.code = ErrorCode::invalid_argument, .message = std::move(message)};
+    return Error{
+        .code = ErrorCode::invalid_argument,
+        .message = std::move(message),
+        .path = std::nullopt,
+    };
   }
 
   [[nodiscard]] static Error config(std::string message) {
-    return Error{.code = ErrorCode::config, .message = std::move(message)};
+    return Error{
+        .code = ErrorCode::config,
+        .message = std::move(message),
+        .path = std::nullopt,
+    };
   }
 
   [[nodiscard]] static Error filesystem(std::filesystem::path path, std::string message) {
