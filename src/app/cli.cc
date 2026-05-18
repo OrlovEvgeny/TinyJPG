@@ -1,25 +1,32 @@
 #include "tinyjpg/app/cli.hh"
 
 #include <CLI/CLI.hpp>
-#include <algorithm>
+#include <csignal>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
+#include <stop_token>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <utility>
 #include <vector>
 
 #include "tinyjpg/core/config_io.hh"
 #include "tinyjpg/core/version.hh"
-#include "tinyjpg/image/image.hh"
 #include "tinyjpg/pipeline/job.hh"
+#include "tinyjpg/service/service.hh"
 
 namespace tinyjpg::app {
 namespace {
 
 constexpr auto kUsage = "Usage: tinyjpg [--version] [--help] <command>\n";
+auto* active_stop_source = static_cast<std::stop_source*>(nullptr);
+
+void request_stop(int /*signal*/) {
+  if (active_stop_source != nullptr) {
+    active_stop_source->request_stop();
+  }
+}
 
 [[noreturn]] void throw_usage(const Error& error) {
   throw CLI::RuntimeError(error.message, static_cast<int>(ExitCode::usage));
@@ -105,49 +112,14 @@ void process_paths(const std::vector<std::filesystem::path>& paths, const AppCon
   }
 }
 
-[[nodiscard]] bool is_supported_image_path(const std::filesystem::path& path) {
-  return codec_from_path(path).has_value();
-}
-
-[[nodiscard]] bool ends_with(std::string_view value, std::string_view suffix) {
-  return value.size() >= suffix.size() &&
-         value.substr(value.size() - suffix.size(), suffix.size()) == suffix;
-}
-
-[[nodiscard]] bool is_generated_variant_path(const std::filesystem::path& path,
-                                             const AppConfig& config) {
-  const auto stem = path.stem().string();
-  return std::ranges::any_of(config.variants, [&stem](const VariantConfig& variant) {
-    const auto suffix = variant.suffix.empty() ? std::string{"-optimized"} : variant.suffix;
-    return ends_with(stem, suffix);
-  });
-}
-
-[[nodiscard]] Result<std::vector<std::filesystem::path>> collect_scan_files(
-    const std::vector<std::string>& input_paths, const AppConfig& config) {
-  auto files = std::vector<std::filesystem::path>{};
+[[nodiscard]] std::vector<std::filesystem::path> path_list(
+    const std::vector<std::string>& input_paths) {
+  auto paths = std::vector<std::filesystem::path>{};
+  paths.reserve(input_paths.size());
   for (const auto& input_path : input_paths) {
-    const auto root = std::filesystem::path{input_path};
-    auto error = std::error_code{};
-    if (std::filesystem::is_regular_file(root, error)) {
-      if (is_supported_image_path(root) && !is_generated_variant_path(root, config)) {
-        files.push_back(root);
-      }
-      continue;
-    }
-
-    if (!std::filesystem::is_directory(root, error)) {
-      return unexpected(Error::filesystem(root, "path is not a file or directory"));
-    }
-
-    for (const auto& entry : std::filesystem::recursive_directory_iterator{root}) {
-      if (entry.is_regular_file() && is_supported_image_path(entry.path()) &&
-          !is_generated_variant_path(entry.path(), config)) {
-        files.push_back(entry.path());
-      }
-    }
+    paths.emplace_back(input_path);
   }
-  return files;
+  return paths;
 }
 
 void run_file_command(const std::vector<std::string>& input_paths, const std::string& config_path,
@@ -157,11 +129,7 @@ void run_file_command(const std::vector<std::string>& input_paths, const std::st
     throw_usage(config.error());
   }
 
-  auto paths = std::vector<std::filesystem::path>{};
-  paths.reserve(input_paths.size());
-  for (const auto& input_path : input_paths) {
-    paths.emplace_back(input_path);
-  }
+  auto paths = path_list(input_paths);
   process_paths(paths, *config);
 }
 
@@ -172,11 +140,35 @@ void scan_command(const std::vector<std::string>& input_paths, const std::string
     throw_usage(config.error());
   }
 
-  auto files = collect_scan_files(input_paths, *config);
-  if (!files) {
-    throw_usage(files.error());
+  auto paths = path_list(input_paths);
+  const auto result = scan_paths(paths, *config, std::cout);
+  if (!result) {
+    throw_usage(result.error());
   }
-  process_paths(*files, *config);
+}
+
+void watch_command(const std::vector<std::string>& input_paths, const std::string& config_path,
+                   const std::string& preset_name) {
+  auto config = load_command_config(config_path, preset_name);
+  if (!config) {
+    throw_usage(config.error());
+  }
+
+  auto paths = input_paths.empty() ? config->watch.paths : path_list(input_paths);
+  if (paths.empty()) {
+    throw_usage(Error::config("watch requires at least one path"));
+  }
+
+  auto stop_source = std::stop_source{};
+  active_stop_source = &stop_source;
+  std::signal(SIGINT, request_stop);
+  std::signal(SIGTERM, request_stop);
+
+  const auto result = watch_paths(paths, *config, std::cout, stop_source.get_token());
+  active_stop_source = nullptr;
+  if (!result) {
+    throw_usage(result.error());
+  }
 }
 
 void print_presets_command() {
@@ -203,6 +195,9 @@ ExitCode run(std::span<char const* const> args) {
   auto scan_input_paths = std::vector<std::string>{};
   auto scan_config_path = std::string{};
   auto scan_preset_name = std::string{};
+  auto watch_input_paths = std::vector<std::string>{};
+  auto watch_config_path = std::string{};
+  auto watch_preset_name = std::string{};
 
   auto* config = app.add_subcommand("config", "Inspect and validate configuration");
   auto* print = config->add_subcommand("print", "Print a sample configuration");
@@ -231,6 +226,14 @@ ExitCode run(std::span<char const* const> args) {
   scan->add_option("--preset", scan_preset_name, "Built-in variant preset");
   scan->callback([&scan_input_paths, &scan_config_path, &scan_preset_name] {
     scan_command(scan_input_paths, scan_config_path, scan_preset_name);
+  });
+
+  auto* watch = app.add_subcommand("watch", "Watch files or directories and optimize changes");
+  watch->add_option("path", watch_input_paths, "Files or directories to watch");
+  watch->add_option("--config,-c", watch_config_path, "TOML configuration file");
+  watch->add_option("--preset", watch_preset_name, "Built-in variant preset");
+  watch->callback([&watch_input_paths, &watch_config_path, &watch_preset_name] {
+    watch_command(watch_input_paths, watch_config_path, watch_preset_name);
   });
 
   auto* presets = app.add_subcommand("presets", "Inspect built-in variant presets");
