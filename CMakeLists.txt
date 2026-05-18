@@ -31,6 +31,10 @@ if(NOT TARGET avif AND NOT TARGET avif::avif AND PkgConfig_FOUND)
   pkg_check_modules(AVIF QUIET IMPORTED_TARGET libavif)
 endif()
 
+if(PkgConfig_FOUND)
+  pkg_check_modules(JXL QUIET IMPORTED_TARGET libjxl)
+endif()
+
 add_library(tinyjpg_core)
 add_library(tinyjpg::tinyjpg ALIAS tinyjpg_core)
 
@@ -77,6 +81,11 @@ elseif(TARGET avif::avif)
 elseif(AVIF_FOUND)
   target_link_libraries(tinyjpg_core PRIVATE PkgConfig::AVIF)
   target_compile_definitions(tinyjpg_core PUBLIC TINYJPG_HAS_AVIF=1)
+endif()
+
+if(JXL_FOUND)
+  target_link_libraries(tinyjpg_core PRIVATE PkgConfig::JXL)
+  target_compile_definitions(tinyjpg_core PUBLIC TINYJPG_HAS_JXL=1)
 endif()
 
 set_target_properties(

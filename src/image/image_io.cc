@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -18,6 +19,13 @@
 #include <png.h>
 #if defined(TINYJPG_HAS_AVIF)
 #include <avif/avif.h>
+#endif
+#if defined(TINYJPG_HAS_JXL)
+#include <jxl/codestream_header.h>
+#include <jxl/color_encoding.h>
+#include <jxl/decode.h>
+#include <jxl/encode.h>
+#include <jxl/types.h>
 #endif
 #if defined(TINYJPG_HAS_WEBP)
 #include <webp/decode.h>
@@ -230,7 +238,7 @@ void jpeg_error_exit(j_common_ptr info) {
   };
 }
 
-#if defined(TINYJPG_HAS_WEBP) || defined(TINYJPG_HAS_AVIF)
+#if defined(TINYJPG_HAS_WEBP) || defined(TINYJPG_HAS_AVIF) || defined(TINYJPG_HAS_JXL)
 [[nodiscard]] Result<std::vector<std::uint8_t>> read_binary_file(
     const std::filesystem::path& path) {
   auto in = std::ifstream{path, std::ios::binary};
@@ -377,6 +385,132 @@ using AvifEncoderPtr = std::unique_ptr<avifEncoder, AvifEncoderDeleter>;
   return Image{
       .width = *checked_width,
       .height = *checked_height,
+      .pixels = std::move(pixels),
+  };
+}
+#endif
+
+#if defined(TINYJPG_HAS_JXL)
+struct JxlDecoderDeleter {
+  void operator()(JxlDecoder* decoder) const noexcept {
+    if (decoder != nullptr) {
+      JxlDecoderDestroy(decoder);
+    }
+  }
+};
+
+struct JxlEncoderDeleter {
+  void operator()(JxlEncoder* encoder) const noexcept {
+    if (encoder != nullptr) {
+      JxlEncoderDestroy(encoder);
+    }
+  }
+};
+
+using JxlDecoderPtr = std::unique_ptr<JxlDecoder, JxlDecoderDeleter>;
+using JxlEncoderPtr = std::unique_ptr<JxlEncoder, JxlEncoderDeleter>;
+
+[[nodiscard]] float jxl_distance(Quality quality, FidelityMode mode) noexcept {
+  if (mode == FidelityMode::visually_lossless) {
+    return 1.0F;
+  }
+  const auto distance = static_cast<float>(100 - quality.percent()) / 10.0F;
+  return std::clamp(distance, 0.5F, 25.0F);
+}
+
+[[nodiscard]] int jxl_effort(EffortLevel effort) noexcept {
+  switch (effort) {
+    case EffortLevel::fast:
+      return 4;
+    case EffortLevel::balanced:
+      return 7;
+    case EffortLevel::max:
+      return 9;
+  }
+  return 7;
+}
+
+[[nodiscard]] Result<Image> decode_jxl(const std::filesystem::path& path) {
+  auto bytes = read_binary_file(path);
+  if (!bytes) {
+    return unexpected(bytes.error());
+  }
+
+  auto decoder = JxlDecoderPtr{JxlDecoderCreate(nullptr)};
+  if (!decoder) {
+    return unexpected(Error::internal("failed to create JPEG XL decoder"));
+  }
+  if (JxlDecoderSubscribeEvents(decoder.get(), JXL_DEC_BASIC_INFO | JXL_DEC_FULL_IMAGE) !=
+      JXL_DEC_SUCCESS) {
+    return unexpected(Error::internal("failed to configure JPEG XL decoder"));
+  }
+  if (JxlDecoderSetInput(decoder.get(), bytes->data(), bytes->size()) != JXL_DEC_SUCCESS) {
+    return unexpected(Error::filesystem(path, "failed to read JPEG XL input"));
+  }
+  JxlDecoderCloseInput(decoder.get());
+
+  auto info = JxlBasicInfo{};
+  auto width = std::optional<PositiveInt>{};
+  auto height = std::optional<PositiveInt>{};
+  auto pixels = std::vector<std::uint8_t>{};
+  const auto format = JxlPixelFormat{3, JXL_TYPE_UINT8, JXL_NATIVE_ENDIAN, 0};
+
+  for (;;) {
+    const auto status = JxlDecoderProcessInput(decoder.get());
+    if (status == JXL_DEC_ERROR) {
+      return unexpected(Error::filesystem(path, "failed to decode JPEG XL file"));
+    }
+    if (status == JXL_DEC_NEED_MORE_INPUT) {
+      return unexpected(Error::filesystem(path, "truncated JPEG XL file"));
+    }
+    if (status == JXL_DEC_BASIC_INFO) {
+      if (JxlDecoderGetBasicInfo(decoder.get(), &info) != JXL_DEC_SUCCESS) {
+        return unexpected(Error::filesystem(path, "failed to read JPEG XL metadata"));
+      }
+      auto checked_width = PositiveInt::from(static_cast<int>(info.xsize), "image.width");
+      auto checked_height = PositiveInt::from(static_cast<int>(info.ysize), "image.height");
+      if (!checked_width) {
+        return unexpected(checked_width.error());
+      }
+      if (!checked_height) {
+        return unexpected(checked_height.error());
+      }
+      width = *checked_width;
+      height = *checked_height;
+      continue;
+    }
+    if (status == JXL_DEC_NEED_IMAGE_OUT_BUFFER) {
+      auto buffer_size = std::size_t{};
+      if (JxlDecoderImageOutBufferSize(decoder.get(), &format, &buffer_size) != JXL_DEC_SUCCESS) {
+        return unexpected(Error::filesystem(path, "failed to size JPEG XL output"));
+      }
+      pixels.resize(buffer_size);
+      if (JxlDecoderSetImageOutBuffer(decoder.get(), &format, pixels.data(), pixels.size()) !=
+          JXL_DEC_SUCCESS) {
+        return unexpected(Error::filesystem(path, "failed to set JPEG XL output"));
+      }
+      continue;
+    }
+    if (status == JXL_DEC_FULL_IMAGE) {
+      continue;
+    }
+    if (status == JXL_DEC_SUCCESS) {
+      break;
+    }
+    return unexpected(Error::internal("unexpected JPEG XL decoder state"));
+  }
+
+  if (!width || !height) {
+    return unexpected(Error::filesystem(path, "missing JPEG XL dimensions"));
+  }
+  const auto expected_size =
+      static_cast<std::size_t>(width->value()) * static_cast<std::size_t>(height->value()) * 3U;
+  if (pixels.size() != expected_size) {
+    return unexpected(Error::filesystem(path, "unexpected JPEG XL output size"));
+  }
+  return Image{
+      .width = *width,
+      .height = *height,
       .pixels = std::move(pixels),
   };
 }
@@ -547,6 +681,81 @@ using AvifEncoderPtr = std::unique_ptr<avifEncoder, AvifEncoderDeleter>;
 }
 #endif
 
+#if defined(TINYJPG_HAS_JXL)
+[[nodiscard]] Result<EncodedImage> encode_jxl(const Image& image, Quality quality,
+                                              FidelityMode mode, EffortLevel effort) {
+  auto encoder = JxlEncoderPtr{JxlEncoderCreate(nullptr)};
+  if (!encoder) {
+    return unexpected(Error::internal("failed to create JPEG XL encoder"));
+  }
+
+  auto info = JxlBasicInfo{};
+  JxlEncoderInitBasicInfo(&info);
+  info.xsize = static_cast<std::uint32_t>(image.width.value());
+  info.ysize = static_cast<std::uint32_t>(image.height.value());
+  info.bits_per_sample = 8;
+  info.exponent_bits_per_sample = 0;
+  info.num_color_channels = 3;
+  info.uses_original_profile = mode == FidelityMode::lossless ? JXL_TRUE : JXL_FALSE;
+  if (JxlEncoderSetBasicInfo(encoder.get(), &info) != JXL_ENC_SUCCESS) {
+    return unexpected(Error::internal("failed to configure JPEG XL metadata"));
+  }
+
+  auto color = JxlColorEncoding{};
+  JxlColorEncodingSetToSRGB(&color, JXL_FALSE);
+  if (JxlEncoderSetColorEncoding(encoder.get(), &color) != JXL_ENC_SUCCESS) {
+    return unexpected(Error::internal("failed to configure JPEG XL color"));
+  }
+
+  auto* frame = JxlEncoderFrameSettingsCreate(encoder.get(), nullptr);
+  if (frame == nullptr) {
+    return unexpected(Error::internal("failed to create JPEG XL frame settings"));
+  }
+  if (JxlEncoderFrameSettingsSetOption(frame, JXL_ENC_FRAME_SETTING_EFFORT, jxl_effort(effort)) !=
+      JXL_ENC_SUCCESS) {
+    return unexpected(Error::internal("failed to configure JPEG XL effort"));
+  }
+  if (mode == FidelityMode::lossless) {
+    if (JxlEncoderSetFrameLossless(frame, JXL_TRUE) != JXL_ENC_SUCCESS) {
+      return unexpected(Error::internal("failed to configure lossless JPEG XL"));
+    }
+  } else if (JxlEncoderSetFrameDistance(frame, jxl_distance(quality, mode)) != JXL_ENC_SUCCESS) {
+    return unexpected(Error::internal("failed to configure JPEG XL quality"));
+  }
+
+  const auto format = JxlPixelFormat{3, JXL_TYPE_UINT8, JXL_NATIVE_ENDIAN, 0};
+  if (JxlEncoderAddImageFrame(frame, &format, image.pixels.data(), image.pixels.size()) !=
+      JXL_ENC_SUCCESS) {
+    return unexpected(Error::internal("failed to encode JPEG XL frame"));
+  }
+  JxlEncoderCloseInput(encoder.get());
+
+  auto bytes = std::vector<std::uint8_t>{};
+  bytes.resize(4096);
+  auto* next = bytes.data();
+  auto available = bytes.size();
+  auto status = JXL_ENC_NEED_MORE_OUTPUT;
+  while (status == JXL_ENC_NEED_MORE_OUTPUT) {
+    status = JxlEncoderProcessOutput(encoder.get(), &next, &available);
+    if (status == JXL_ENC_NEED_MORE_OUTPUT) {
+      const auto offset = static_cast<std::size_t>(next - bytes.data());
+      bytes.resize(bytes.size() * 2U);
+      next = bytes.data() + offset;
+      available = bytes.size() - offset;
+    }
+  }
+  if (status != JXL_ENC_SUCCESS) {
+    return unexpected(Error::internal("failed to finalize JPEG XL image"));
+  }
+  bytes.resize(static_cast<std::size_t>(next - bytes.data()));
+
+  return EncodedImage{
+      .codec = Codec::jxl,
+      .bytes = std::move(bytes),
+  };
+}
+#endif
+
 }  // namespace
 
 Result<Codec> codec_from_path(const std::filesystem::path& path) {
@@ -564,6 +773,11 @@ Result<Codec> codec_from_path(const std::filesystem::path& path) {
 #if defined(TINYJPG_HAS_AVIF)
   if (has_extension(path, ".avif")) {
     return Codec::avif;
+  }
+#endif
+#if defined(TINYJPG_HAS_JXL)
+  if (has_extension(path, ".jxl")) {
+    return Codec::jxl;
   }
 #endif
   return unexpected(
@@ -584,8 +798,10 @@ std::filesystem::path replace_extension_for_codec(std::filesystem::path path, Co
     case Codec::avif:
       path.replace_extension(".avif");
       break;
-    case Codec::auto_select:
     case Codec::jxl:
+      path.replace_extension(".jxl");
+      break;
+    case Codec::auto_select:
       break;
   }
   return path;
@@ -612,6 +828,11 @@ Result<Image> decode_image(const std::filesystem::path& path) {
     return decode_avif(path);
   }
 #endif
+#if defined(TINYJPG_HAS_JXL)
+  if (*codec == Codec::jxl) {
+    return decode_jxl(path);
+  }
+#endif
   return unexpected(Error::unsupported("unsupported image codec"));
 }
 
@@ -635,6 +856,11 @@ Result<EncodedImage> encode_image(const Image& image, Codec codec, Quality quali
 #if defined(TINYJPG_HAS_AVIF)
   if (codec == Codec::avif) {
     return encode_avif(image, quality, mode, effort);
+  }
+#endif
+#if defined(TINYJPG_HAS_JXL)
+  if (codec == Codec::jxl) {
+    return encode_jxl(image, quality, mode, effort);
   }
 #endif
   static_cast<void>(mode);

@@ -16,6 +16,7 @@
       ]
     },
     "libjpeg-turbo",
+    "libjxl",
     "libpng",
     "libwebp",
     "spdlog",

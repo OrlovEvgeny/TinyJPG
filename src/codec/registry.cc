@@ -10,13 +10,15 @@ namespace tinyjpg {
 namespace {
 
 constexpr auto kSupportedCodecs = std::array{
-    Codec::jpeg,
-    Codec::png,
+    Codec::jpeg, Codec::png,
 #if defined(TINYJPG_HAS_WEBP)
     Codec::webp,
 #endif
 #if defined(TINYJPG_HAS_AVIF)
     Codec::avif,
+#endif
+#if defined(TINYJPG_HAS_JXL)
+    Codec::jxl,
 #endif
 };
 
@@ -42,8 +44,9 @@ std::string_view codec_extension(Codec codec) noexcept {
       return ".webp";
     case Codec::avif:
       return ".avif";
-    case Codec::auto_select:
     case Codec::jxl:
+      return ".jxl";
+    case Codec::auto_select:
       return {};
   }
   return {};
