@@ -1,0 +1,15 @@
+Checks: >
+  -*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  modernize-*,
+  performance-*,
+  readability-*
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: true
+CheckOptions:
+  - key: readability-identifier-length.IgnoredVariableNames
+    value: 'i|j|k|n'
+  - key: readability-function-cognitive-complexity.Threshold
+    value: '20'

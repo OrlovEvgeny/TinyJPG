@@ -1,0 +1,82 @@
+name: ci
+
+on:
+  push:
+    branches: [feature/cpp-rewrite]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Debug, Release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 56bb2411609227288b70117ead2c47585ba07713
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -G Ninja
+          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_STANDARD=23
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DBUILD_TESTING=ON
+          -DTINYJPG_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }}
+
+      - name: Test
+        run: ctest --test-dir build --build-config ${{ matrix.build_type }} --output-on-failure
+
+  hygiene:
+    name: hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y clang-format clang-tidy ninja-build
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 56bb2411609227288b70117ead2c47585ba07713
+
+      - name: Format
+        run: find include src tests -name '*.hh' -o -name '*.cc' | xargs clang-format --dry-run -Werror
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -G Ninja
+          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_STANDARD=23
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          -DBUILD_TESTING=ON
+
+      - name: Tidy
+        run: clang-tidy -p build src/app/main.cc src/app/cli.cc src/core/version.cc tests/version_test.cc
