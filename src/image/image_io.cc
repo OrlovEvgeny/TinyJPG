@@ -16,6 +16,9 @@
 // jpeglib.h depends on size_t and FILE declarations being visible first.
 #include <jpeglib.h>
 #include <png.h>
+#if defined(TINYJPG_HAS_AVIF)
+#include <avif/avif.h>
+#endif
 #if defined(TINYJPG_HAS_WEBP)
 #include <webp/decode.h>
 #include <webp/encode.h>
@@ -227,7 +230,7 @@ void jpeg_error_exit(j_common_ptr info) {
   };
 }
 
-#if defined(TINYJPG_HAS_WEBP)
+#if defined(TINYJPG_HAS_WEBP) || defined(TINYJPG_HAS_AVIF)
 [[nodiscard]] Result<std::vector<std::uint8_t>> read_binary_file(
     const std::filesystem::path& path) {
   auto in = std::ifstream{path, std::ios::binary};
@@ -237,7 +240,9 @@ void jpeg_error_exit(j_common_ptr info) {
   return std::vector<std::uint8_t>{std::istreambuf_iterator<char>{in},
                                    std::istreambuf_iterator<char>{}};
 }
+#endif
 
+#if defined(TINYJPG_HAS_WEBP)
 struct WebPBufferDeleter {
   void operator()(std::uint8_t* buffer) const noexcept {
     if (buffer != nullptr) {
@@ -280,6 +285,99 @@ using WebPBufferPtr = std::unique_ptr<std::uint8_t, WebPBufferDeleter>;
       .width = *checked_width,
       .height = *checked_height,
       .pixels = std::vector<std::uint8_t>{owned.get(), owned.get() + byte_count},
+  };
+}
+#endif
+
+#if defined(TINYJPG_HAS_AVIF)
+struct AvifImageDeleter {
+  void operator()(avifImage* image) const noexcept {
+    if (image != nullptr) {
+      avifImageDestroy(image);
+    }
+  }
+};
+
+struct AvifDecoderDeleter {
+  void operator()(avifDecoder* decoder) const noexcept {
+    if (decoder != nullptr) {
+      avifDecoderDestroy(decoder);
+    }
+  }
+};
+
+struct AvifEncoderDeleter {
+  void operator()(avifEncoder* encoder) const noexcept {
+    if (encoder != nullptr) {
+      avifEncoderDestroy(encoder);
+    }
+  }
+};
+
+struct AvifDataGuard {
+  avifRWData data = AVIF_DATA_EMPTY;
+
+  ~AvifDataGuard() { avifRWDataFree(&data); }
+};
+
+using AvifImagePtr = std::unique_ptr<avifImage, AvifImageDeleter>;
+using AvifDecoderPtr = std::unique_ptr<avifDecoder, AvifDecoderDeleter>;
+using AvifEncoderPtr = std::unique_ptr<avifEncoder, AvifEncoderDeleter>;
+
+[[nodiscard]] Error avif_error(const char* action, avifResult result) {
+  return Error::internal(std::string{action} + ": " + avifResultToString(result));
+}
+
+[[nodiscard]] Result<Image> decode_avif(const std::filesystem::path& path) {
+  auto bytes = read_binary_file(path);
+  if (!bytes) {
+    return unexpected(bytes.error());
+  }
+
+  auto decoder = AvifDecoderPtr{avifDecoderCreate()};
+  if (!decoder) {
+    return unexpected(Error::internal("failed to create AVIF decoder"));
+  }
+  auto decoded = AvifImagePtr{avifImageCreateEmpty()};
+  if (!decoded) {
+    return unexpected(Error::internal("failed to create AVIF image"));
+  }
+
+  const auto result =
+      avifDecoderReadMemory(decoder.get(), decoded.get(), bytes->data(), bytes->size());
+  if (result != AVIF_RESULT_OK) {
+    return unexpected(avif_error("failed to decode AVIF file", result));
+  }
+
+  auto checked_width = PositiveInt::from(static_cast<int>(decoded->width), "image.width");
+  auto checked_height = PositiveInt::from(static_cast<int>(decoded->height), "image.height");
+  if (!checked_width) {
+    return unexpected(checked_width.error());
+  }
+  if (!checked_height) {
+    return unexpected(checked_height.error());
+  }
+
+  auto pixels = std::vector<std::uint8_t>{};
+  pixels.resize(static_cast<std::size_t>(decoded->width) *
+                static_cast<std::size_t>(decoded->height) * 3U);
+
+  auto rgb = avifRGBImage{};
+  avifRGBImageSetDefaults(&rgb, decoded.get());
+  rgb.depth = 8;
+  rgb.format = AVIF_RGB_FORMAT_RGB;
+  rgb.pixels = pixels.data();
+  rgb.rowBytes = decoded->width * 3U;
+
+  const auto conversion = avifImageYUVToRGB(decoded.get(), &rgb);
+  if (conversion != AVIF_RESULT_OK) {
+    return unexpected(avif_error("failed to convert AVIF pixels", conversion));
+  }
+
+  return Image{
+      .width = *checked_width,
+      .height = *checked_height,
+      .pixels = std::move(pixels),
   };
 }
 #endif
@@ -395,6 +493,60 @@ using WebPBufferPtr = std::unique_ptr<std::uint8_t, WebPBufferDeleter>;
 }
 #endif
 
+#if defined(TINYJPG_HAS_AVIF)
+[[nodiscard]] Result<EncodedImage> encode_avif(const Image& image, Quality quality,
+                                               FidelityMode mode, EffortLevel effort) {
+  const auto width = image.width.value();
+  const auto height = image.height.value();
+  auto avif_image = AvifImagePtr{avifImageCreate(static_cast<std::uint32_t>(width),
+                                                 static_cast<std::uint32_t>(height), 8,
+                                                 AVIF_PIXEL_FORMAT_YUV444)};
+  if (!avif_image) {
+    return unexpected(Error::internal("failed to create AVIF image"));
+  }
+
+  avif_image->colorPrimaries = AVIF_COLOR_PRIMARIES_SRGB;
+  avif_image->transferCharacteristics = AVIF_TRANSFER_CHARACTERISTICS_SRGB;
+  avif_image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_IDENTITY;
+  avif_image->yuvRange = AVIF_RANGE_FULL;
+
+  auto rgb = avifRGBImage{};
+  avifRGBImageSetDefaults(&rgb, avif_image.get());
+  rgb.depth = 8;
+  rgb.format = AVIF_RGB_FORMAT_RGB;
+  rgb.chromaDownsampling = mode == FidelityMode::lossy ? AVIF_CHROMA_DOWNSAMPLING_AUTOMATIC
+                                                       : AVIF_CHROMA_DOWNSAMPLING_BEST_QUALITY;
+  rgb.pixels = const_cast<std::uint8_t*>(image.pixels.data());
+  rgb.rowBytes = static_cast<std::uint32_t>(width * 3);
+
+  const auto conversion = avifImageRGBToYUV(avif_image.get(), &rgb);
+  if (conversion != AVIF_RESULT_OK) {
+    return unexpected(avif_error("failed to convert RGB pixels to AVIF", conversion));
+  }
+
+  auto encoder = AvifEncoderPtr{avifEncoderCreate()};
+  if (!encoder) {
+    return unexpected(Error::internal("failed to create AVIF encoder"));
+  }
+  encoder->quality = mode == FidelityMode::lossless ? AVIF_QUALITY_LOSSLESS : quality.percent();
+  encoder->qualityAlpha = AVIF_QUALITY_LOSSLESS;
+  encoder->speed = effort == EffortLevel::fast       ? AVIF_SPEED_FASTEST
+                   : effort == EffortLevel::balanced ? 6
+                                                     : AVIF_SPEED_SLOWEST;
+
+  auto output = AvifDataGuard{};
+  const auto result = avifEncoderWrite(encoder.get(), avif_image.get(), &output.data);
+  if (result != AVIF_RESULT_OK) {
+    return unexpected(avif_error("failed to encode AVIF image", result));
+  }
+
+  return EncodedImage{
+      .codec = Codec::avif,
+      .bytes = std::vector<std::uint8_t>{output.data.data, output.data.data + output.data.size},
+  };
+}
+#endif
+
 }  // namespace
 
 Result<Codec> codec_from_path(const std::filesystem::path& path) {
@@ -407,6 +559,11 @@ Result<Codec> codec_from_path(const std::filesystem::path& path) {
 #if defined(TINYJPG_HAS_WEBP)
   if (has_extension(path, ".webp")) {
     return Codec::webp;
+  }
+#endif
+#if defined(TINYJPG_HAS_AVIF)
+  if (has_extension(path, ".avif")) {
+    return Codec::avif;
   }
 #endif
   return unexpected(
@@ -424,8 +581,10 @@ std::filesystem::path replace_extension_for_codec(std::filesystem::path path, Co
     case Codec::webp:
       path.replace_extension(".webp");
       break;
-    case Codec::auto_select:
     case Codec::avif:
+      path.replace_extension(".avif");
+      break;
+    case Codec::auto_select:
     case Codec::jxl:
       break;
   }
@@ -448,6 +607,11 @@ Result<Image> decode_image(const std::filesystem::path& path) {
     return decode_webp(path);
   }
 #endif
+#if defined(TINYJPG_HAS_AVIF)
+  if (*codec == Codec::avif) {
+    return decode_avif(path);
+  }
+#endif
   return unexpected(Error::unsupported("unsupported image codec"));
 }
 
@@ -467,9 +631,13 @@ Result<EncodedImage> encode_image(const Image& image, Codec codec, Quality quali
   if (codec == Codec::webp) {
     return encode_webp(image, quality, mode);
   }
-#else
-  static_cast<void>(mode);
 #endif
+#if defined(TINYJPG_HAS_AVIF)
+  if (codec == Codec::avif) {
+    return encode_avif(image, quality, mode, effort);
+  }
+#endif
+  static_cast<void>(mode);
   return unexpected(Error::unsupported("unsupported output codec"));
 }
 

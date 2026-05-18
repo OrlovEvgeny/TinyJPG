@@ -15,6 +15,7 @@ include(GNUInstallDirs)
 
 find_package(CLI11 CONFIG REQUIRED)
 find_package(JPEG REQUIRED)
+find_package(libavif CONFIG QUIET)
 find_package(PNG REQUIRED)
 find_package(WebP CONFIG QUIET)
 find_package(PkgConfig QUIET)
@@ -24,6 +25,10 @@ find_package(yaml-cpp CONFIG REQUIRED)
 
 if(NOT WebP_FOUND AND PkgConfig_FOUND)
   pkg_check_modules(WEBP QUIET IMPORTED_TARGET libwebp)
+endif()
+
+if(NOT TARGET avif AND NOT TARGET avif::avif AND PkgConfig_FOUND)
+  pkg_check_modules(AVIF QUIET IMPORTED_TARGET libavif)
 endif()
 
 add_library(tinyjpg_core)
@@ -61,6 +66,17 @@ if(WebP_FOUND)
 elseif(WEBP_FOUND)
   target_link_libraries(tinyjpg_core PRIVATE PkgConfig::WEBP)
   target_compile_definitions(tinyjpg_core PUBLIC TINYJPG_HAS_WEBP=1)
+endif()
+
+if(TARGET avif)
+  target_link_libraries(tinyjpg_core PRIVATE avif)
+  target_compile_definitions(tinyjpg_core PUBLIC TINYJPG_HAS_AVIF=1)
+elseif(TARGET avif::avif)
+  target_link_libraries(tinyjpg_core PRIVATE avif::avif)
+  target_compile_definitions(tinyjpg_core PUBLIC TINYJPG_HAS_AVIF=1)
+elseif(AVIF_FOUND)
+  target_link_libraries(tinyjpg_core PRIVATE PkgConfig::AVIF)
+  target_compile_definitions(tinyjpg_core PUBLIC TINYJPG_HAS_AVIF=1)
 endif()
 
 set_target_properties(

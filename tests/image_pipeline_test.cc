@@ -145,6 +145,24 @@ TEST_CASE("webp codec decodes encoded output") {
   CHECK(decoded->pixels == image.pixels);
 }
 #endif
+#if defined(TINYJPG_HAS_AVIF)
+TEST_CASE("avif codec decodes encoded output") {
+  const auto image = test_image();
+  const auto encoded =
+      tinyjpg::encode_image(image, tinyjpg::Codec::avif, tinyjpg::Quality::from_percent(82).value(),
+                            tinyjpg::FidelityMode::lossy, tinyjpg::EffortLevel::fast);
+  REQUIRE(encoded.has_value());
+
+  const auto path = temp_path("tinyjpg-round-trip.avif");
+  write_bytes(path, encoded->bytes);
+
+  const auto decoded = tinyjpg::decode_image(path);
+  REQUIRE(decoded.has_value());
+  CHECK(decoded->width == image.width);
+  CHECK(decoded->height == image.height);
+  CHECK(decoded->pixels.size() == image.pixels.size());
+}
+#endif
 #else
 int main() {
   auto image = test_image();

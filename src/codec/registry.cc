@@ -15,6 +15,9 @@ constexpr auto kSupportedCodecs = std::array{
 #if defined(TINYJPG_HAS_WEBP)
     Codec::webp,
 #endif
+#if defined(TINYJPG_HAS_AVIF)
+    Codec::avif,
+#endif
 };
 
 }  // namespace
@@ -37,8 +40,9 @@ std::string_view codec_extension(Codec codec) noexcept {
       return ".png";
     case Codec::webp:
       return ".webp";
-    case Codec::auto_select:
     case Codec::avif:
+      return ".avif";
+    case Codec::auto_select:
     case Codec::jxl:
       return {};
   }
