@@ -84,3 +84,55 @@ jobs:
 
       - name: Tidy
         run: clang-tidy -p build src/app/main.cc src/app/cli.cc src/core/version.cc tests/version_test.cc
+
+  sanitizer:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: asan-ubsan
+            cxx_flags: -fsanitize=address,undefined -fno-omit-frame-pointer
+            linker_flags: -fsanitize=address,undefined
+            test_regex: .*
+          - name: tsan-service
+            cxx_flags: -fsanitize=thread -fno-omit-frame-pointer
+            linker_flags: -fsanitize=thread
+            test_regex: tinyjpg_service_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y nasm ninja-build
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 56bb2411609227288b70117ead2c47585ba07713
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -G Ninja
+          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_STANDARD=23
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DCMAKE_CXX_FLAGS="${{ matrix.cxx_flags }}"
+          -DCMAKE_EXE_LINKER_FLAGS="${{ matrix.linker_flags }}"
+          -DCMAKE_SHARED_LINKER_FLAGS="${{ matrix.linker_flags }}"
+          -DBUILD_TESTING=ON
+          -DTINYJPG_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -R "${{ matrix.test_regex }}"
+        env:
+          ASAN_OPTIONS: detect_leaks=1:strict_init_order=1
+          UBSAN_OPTIONS: print_stacktrace=1
+          TSAN_OPTIONS: halt_on_error=1

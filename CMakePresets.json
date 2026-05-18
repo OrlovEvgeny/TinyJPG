@@ -51,6 +51,16 @@
       }
     },
     {
+      "name": "thread-sanitize",
+      "inherits": "debug",
+      "displayName": "Debug with thread sanitizer",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-fsanitize=thread -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=thread",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=thread"
+      }
+    },
+    {
       "name": "windows-base",
       "hidden": true,
       "generator": "Ninja",
@@ -99,6 +109,10 @@
       "configurePreset": "sanitize"
     },
     {
+      "name": "thread-sanitize",
+      "configurePreset": "thread-sanitize"
+    },
+    {
       "name": "windows-debug",
       "configurePreset": "windows-debug"
     },
@@ -125,6 +139,13 @@
     {
       "name": "sanitize",
       "configurePreset": "sanitize",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "thread-sanitize",
+      "configurePreset": "thread-sanitize",
       "output": {
         "outputOnFailure": true
       }
