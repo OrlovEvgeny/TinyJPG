@@ -69,7 +69,7 @@ jobs:
           vcpkgGitCommitId: 56bb2411609227288b70117ead2c47585ba07713
 
       - name: Format
-        run: find include src tests -name '*.hh' -o -name '*.cc' | xargs clang-format --dry-run -Werror
+        run: find include src tests bench -name '*.hh' -o -name '*.cc' | xargs clang-format --dry-run -Werror
 
       - name: Configure
         run: >
