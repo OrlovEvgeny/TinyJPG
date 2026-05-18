@@ -4,9 +4,8 @@
 
 <p align="center">
   <a href="https://github.com/OrlovEvgeny/TinyJPG/actions/workflows/ci.yml"><img alt="CI status" src="https://img.shields.io/github/actions/workflow/status/OrlovEvgeny/TinyJPG/ci.yml?branch=feature%2Fcpp-rewrite&style=for-the-badge&logo=githubactions&logoColor=white&label=CI"></a>
-  <a href="https://github.com/OrlovEvgeny/TinyJPG/actions/workflows/release.yml"><img alt="Release workflow" src="https://img.shields.io/badge/release-R2%20publishing-0EA5E9?style=for-the-badge&logo=githubactions&logoColor=white"></a>
+  <a href="https://github.com/OrlovEvgeny/TinyJPG/releases"><img alt="Releases" src="https://img.shields.io/badge/release-R2%20publishing-0EA5E9?style=for-the-badge&logo=githubactions&logoColor=white"></a>
   <a href="#install"><img alt="Install TinyJPG" src="https://img.shields.io/badge/install-curl%20%7C%20brew%20%7C%20powershell-16A34A?style=for-the-badge&logo=icloud&logoColor=white"></a>
-  <a href="https://github.com/OrlovEvgeny/homebrew-tinyjpg"><img alt="Homebrew tap" src="https://img.shields.io/badge/homebrew-tap-FBB040?style=for-the-badge&logo=homebrew&logoColor=111111"></a>
   <a href="https://en.cppreference.com/w/cpp/compiler_support/23"><img alt="C++23" src="https://img.shields.io/badge/C%2B%2B-23-00599C?style=for-the-badge&logo=cplusplus&logoColor=white"></a>
   <a href="https://cmake.org/"><img alt="CMake" src="https://img.shields.io/badge/build-CMake-064F8C?style=for-the-badge&logo=cmake&logoColor=white"></a>
   <a href="https://learn.microsoft.com/vcpkg/"><img alt="vcpkg" src="https://img.shields.io/badge/deps-vcpkg-2F74C0?style=for-the-badge"></a>
